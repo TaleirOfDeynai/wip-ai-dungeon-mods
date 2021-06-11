@@ -1,5 +1,6 @@
 const { Pipeline } = require("aid-bundler");
 const { SimpleCommand } = require("./commands");
+const { shutUpTS } = require("./utils");
 const withMemory = require("./with-memory");
 const configCommander = require("./config-commander");
 const worldControl = require("./world-control");
@@ -33,9 +34,21 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
 
 pipeline.commandHandler.addCommand(new SimpleCommand(
   "report-global-vars",
-  (data) => {
-    console.log(Object.keys(globalThis));
-    return "Global variable names dumped to logs.";
+  (data, [arg]) => {
+    if (arg !== "deep") {
+      console.log(Object.keys(globalThis));
+      return "Own-properties of the global object dumped to logs.";
+    }
+    
+    let curRef = globalThis;
+    const allProps = [];
+    while(curRef != null) {
+      allProps.push(...Object.keys(curRef));
+      curRef = Object.getPrototypeOf(curRef);
+    }
+
+    console.log([...new Set(allProps)]);
+    return "All properties of the global object dumped to logs.";
   })
 );
 
@@ -58,15 +71,18 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
         : key;
       traveledPath.push(descriptiveKey);
 
+      if (typeOfRef === "function") {
+        /** @type {Function} */
+        const currentFn = shutUpTS(currentRef);
+        const fnBody = currentFn.toString();
+        if (!currentFn.name) return `${traveledPath.join(".")} is a function:\n\n${fnBody}`;
+        return `${traveledPath.join(".")} is a function named \`${currentFn.name}\`:\n\n${fnBody}`;
+      }
+
       if (typeOfRef === "undefined") return `${traveledPath.join(".")} is \`undefined\``;
       if (typeOfRef === "string") return `${traveledPath.join(".")} is a string:\n${String(currentRef)}`;
       if (typeOfRef !== "object") return `${traveledPath.join(".")} is \`${String(currentRef)}\``;
       if (currentRef === null) return `${traveledPath.join(".")} is \`null\``;
-    }
-
-    if (typeof currentRef === "function") {
-      if (!currentRef.name) return `${traveledPath.join(".")} is a function`;
-      return `${traveledPath.join(".")} is a function named \`${currentRef.name}\``
     }
 
     console.log(currentRef);
