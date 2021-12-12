@@ -25,6 +25,15 @@ exports.shutUpTS = (value) => value;
 exports.ident = (input) => input;
 
 /**
+ * Forces a primitive literal to be a literal value.
+ * 
+ * @template {readonly [Primitives]} T
+ * @param {T} arg 
+ * @returns {T[0]}
+ */
+exports.asConstant = (...arg) => arg[0];
+
+/**
  * Creates a strongly-typed tuple of any size, but supports only simpler
  * primatives: `number`, `string`, `boolean`, functions, and plain objects.
  * 
@@ -55,6 +64,30 @@ exports.tuple2 = (a, b) => [a, b];
  * @returns {[TA, TB, TC]}
  */
 exports.tuple3 = (a, b, c) => [a, b, c];
+
+/** Helpers for type-guards. */
+exports.is = {
+  /** @type {TypePredicate<Function>} */
+  function: (value) => typeof value === "function",
+  /** @type {TypePredicate<Object>} */
+  object: (value) => value && typeof value === "object",
+  /** @type {TypePredicate<any[]>} */
+  array: (value) => Array.isArray(value),
+  /** @type {TypePredicate<string>} */
+  string: (value) => typeof value === "string",
+  /** @type {TypePredicate<number>} */
+  number: (value) => typeof value === "number",
+  /** A bare object that inherits from only `Object` or nothing. */
+  pojo: exports.dew(() => {
+    const POJO_PROTOS = [Object.prototype, null];
+    /** @type {TypePredicate<Object>} */
+    const innerFn = (value) => {
+      if (!exports.is.object(value)) return false;
+      return POJO_PROTOS.includes(Object.getPrototypeOf(value));
+    };
+    return innerFn;
+  })
+};
 
 /**
  * Checks that a value is not `null` or `undefined`.
