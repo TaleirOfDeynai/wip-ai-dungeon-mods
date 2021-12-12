@@ -560,17 +560,17 @@ exports.sumLength = (acc, str) => {
 };
 
 /**
- * Gets the text body of a World-Info entry, now that it can be defined
- * in two different properties because Latitude are hopeless fuck-ups.
+ * Gets the text body of a World-Info entry.
+ * 
+ * Note: there was a period of time when Latitude had world-info assigning
+ * the actual entry text to the `description` field, and this function
+ * existed as a temporary fix.  It does not appear to be needed now, but
+ * I'm keeping it around in case of future Latitude fuck-ups.
  * 
  * @param {WorldInfoEntry} wiEntry
  * @returns {string}
  */
-exports.getEntryText = (wiEntry) => {
-  if (wiEntry.description) return wiEntry.description;
-  if (wiEntry.entry) return wiEntry.entry;
-  return "";
-};
+exports.getEntryText = (wiEntry) => wiEntry.entry || "";
 
 /**
  * Function that gets text from an object.
