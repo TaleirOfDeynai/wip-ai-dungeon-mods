@@ -28,7 +28,7 @@ exports.ident = (input) => input;
  * Creates a strongly-typed tuple of any size, but supports only simpler
  * primatives: `number`, `string`, `boolean`, functions, and plain objects.
  * 
- * @template {readonly Primatives[]} T
+ * @template {readonly Primitives[]} T
  * @param {T} args
  * @returns {[...T]}
  */
