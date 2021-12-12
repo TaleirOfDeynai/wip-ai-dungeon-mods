@@ -1,5 +1,3 @@
-const { tuple2, fromPairs } = require("../../utils");
-const { BadStateEntryError } = require("../StateEngineEntry");
 const { allStateEntries } = require("../registry");
 
 /**
