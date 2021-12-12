@@ -21,7 +21,7 @@ declare interface WorldInfoEntry {
   tagsString: string | null;
   keys: string;
   genre: string | null;
-  attributes: unknown;
+  attributes: Record<string, string | null | undefined> | null;
   entry: string | null;
   description: string | null;
   favorite: boolean;
