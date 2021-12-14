@@ -124,9 +124,10 @@ exports.extractType = (worldInfo) => {
 class EngineEntryForWorldInfo extends StateEngineEntry {
   /**
    * @param {WorldInfoEntry} worldInfo
+   * @param {Context["config"]} config
    */
-  constructor(worldInfo) {
-    super();
+  constructor(worldInfo, config) {
+    super(config);
     const parsedResult = this.parse(worldInfo);
     this.init(worldInfo.id, parsedResult.keys, parsedResult);
     this.worldInfo = worldInfo;
@@ -145,15 +146,15 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
 
   /**
    * @param {AIDData} data
-   * @param {Map<string, string[]>} issuesMap
+   * @param {Context} ctx
    * @returns {Iterable<StateEngineEntry>}
    */
-  static *produceEntries(data, issuesMap) {
+  static *produceEntries(data, { config, validationIssues }) {
     for (const info of data.worldEntries) {
       try {
         const type = exports.extractType(info);
         if (!this.checkType(type)) continue;
-        yield new this(info);
+        yield new this(info, config);
       }
       catch(err) {
         if (err instanceof InvalidTypeError) {
@@ -166,9 +167,9 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
         if (err instanceof BadStateEntryError) {
           // Log this error out to the user, associated with the world-info entry.
           const renderAs = worldInfoString(info);
-          const issues = issuesMap.get(renderAs) ?? [];
+          const issues = validationIssues.get(renderAs) ?? [];
           issues.push(err.message);
-          issuesMap.set(renderAs, issues);
+          validationIssues.set(renderAs, issues);
           continue;
         }
         // Not one of ours?  Throw it.

@@ -1,5 +1,6 @@
 const { memoizedCounter } = require("../MatchableEntry");
 const turnCache = require("../../turn-cache");
+const getConfig = require("../config");
 
 /**
  * Sets up shared context object.
@@ -8,6 +9,7 @@ const turnCache = require("../../turn-cache");
  */
  module.exports = (data) => {
   data.stateEngineContext = {
+    config: getConfig(data),
     matchCounter: memoizedCounter(),
     theCache: turnCache.forWrite(data, "StateEngine.association"),
     entriesMap: {},

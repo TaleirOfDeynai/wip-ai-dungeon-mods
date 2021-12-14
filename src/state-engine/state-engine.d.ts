@@ -222,6 +222,18 @@ interface WithOrdering {
   order: number;
 }
 
+interface Context {
+  config: import("./config").StateEngineConfig;
+  matchCounter: (str: string, regex: RegExp) => number;
+  theCache: import("../turn-cache").WriteCache<StateDataCache>;
+  entriesMap: Record<string, StateEngineEntry>;
+  validationIssues: Map<string, string[]>;
+  sortedStateMatchers: import("./MatchableEntry").MatchableEntry[];
+  workingHistory: HistoryEntry[];
+  stateAssociations: StateAssociations;
+  scoresMap: ScoresMap;
+}
+
 declare interface GameState {
   /**
    * A cache of pre-processed `StateEngineData` entries.
@@ -231,6 +243,6 @@ declare interface GameState {
 
 declare module "aid-bundler/src/aidData" {
   interface AIDData {
-    stateEngineContext: import("./core/types").Context;
+    stateEngineContext: Context;
   }
 }

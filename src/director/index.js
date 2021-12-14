@@ -27,9 +27,10 @@ const init = (data) => {
   class DirectionEntry extends EngineEntryForWorldInfo {
     /**
      * @param {WorldInfoEntry} worldInfo
+     * @param {Context["config"]} config
      */
-    constructor(worldInfo) {
-      super(worldInfo);
+    constructor(worldInfo, config) {
+      super(worldInfo, config);
 
       /**
        * The number of history sources this entry was able to match.

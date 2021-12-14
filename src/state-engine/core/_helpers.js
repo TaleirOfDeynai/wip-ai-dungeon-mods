@@ -1,11 +1,10 @@
 const { shutUpTS, dew, tuple2, tuple3 } = require("../../utils");
 const { mapIter, iterArray, toPairs, fromPairs, chain } = require("../../utils");
-const { entryCount } = require("../config");
 
 /** @type {import("./types").GetAssociationSet} */
 exports.getAssociationSet = dew(() => {
   /**
-   * @param {import("./types").Context} ctx
+   * @param {Context} ctx
    * @param {AssociationSources} source
    * @param {boolean} [create]
    * @returns {Maybe<Set<StateEngineEntry["entryId"]>>}
@@ -67,7 +66,7 @@ exports.makePreRuleIterators = dew(() => {
   const nilIter = () => [];
 
   /**
-   * @param {import("./types").Context} ctx
+   * @param {Context} ctx
    * @returns {(source: AssociationSources) => Iterable<PreRuleIteratorResult>}
    */
   const makeRuleIterator = (ctx) => function* (source) {
@@ -77,12 +76,13 @@ exports.makePreRuleIterators = dew(() => {
   };
 
   /**
-   * @param {import("./types").Context} ctx
+   * @param {Context} ctx
    * @param {StateEngineEntry} stateEntry
    * @param {AssociationSources} source
    * @returns {PreRuleIterators}
    */
   const impl = (ctx, stateEntry, source) => {
+    const entryCount = ctx.config.get("integer", "entryCount");
     const getFor = makeRuleIterator(ctx);
 
     const before = dew(() => {

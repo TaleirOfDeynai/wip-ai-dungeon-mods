@@ -27,8 +27,11 @@ const init = (data) => {
    */
   class RecallEntry extends makeQuerying(data, StateEngineEntry) {
 
-    constructor() {
-      super();
+    /**
+     * @param {import("../state-engine/config").StateEngineConfig} stateEngineConfig
+     */
+    constructor(stateEngineConfig) {
+      super(stateEngineConfig);
       this.init(`Recall<${data.actionCount}>`);
 
       /**
@@ -65,9 +68,10 @@ const init = (data) => {
 
     /**
      * @param {AIDData} data
+     * @param {Context} ctx
      * @returns {Iterable<StateEngineEntry>}
      */
-    static *produceEntries(data) {
+    static *produceEntries(data, ctx) {
       const {
         earliestActionForQuery,
         minimumEntriesRequired,
@@ -84,7 +88,7 @@ const init = (data) => {
       // How many history entries it provides seems to vary.  One adventure
       // gave me 100 while another gave 200.  Weird.
       if (data.history.length < neededLength) return;
-      yield new RecallEntry();
+      yield new RecallEntry(ctx.config);
     }
 
     static get forType() { return "Recall"; }

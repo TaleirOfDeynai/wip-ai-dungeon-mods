@@ -1,4 +1,3 @@
-const { entryCount } = require("./config");
 const { chain, partition, fromPairs, tuple } = require("../utils");
 const { setsIntersect, setIsSubsetOf } = require("../utils");
 
@@ -13,12 +12,11 @@ const { setsIntersect, setIsSubsetOf } = require("../utils");
  * 
  * @param {UsedKeysMap} usedKeys
  * @param {number} start
- * @param {number} [end]
+ * @param {number} end
  * @returns {Iterable<string>}
  */
-exports.iterUsedKeys = function*(usedKeys, start, end = entryCount) {
-  // Make sure we don't go beyond the available history.
-  end = Math.min(end, entryCount);
+exports.iterUsedKeys = function*(usedKeys, start, end) {
+  // Make sure we don't go before the available history.
   let index = Math.max(start, 0);
   while(index <= end) {
     const theKeys = usedKeys.get(index);
@@ -29,9 +27,10 @@ exports.iterUsedKeys = function*(usedKeys, start, end = entryCount) {
 
 class RelatableEntry {
   /**
-   * @param {readonly AnyRelationDef[]} relations 
+   * @param {readonly AnyRelationDef[]} relations
+   * @param {number} entryCount
    */
-  constructor(relations) {
+  constructor(relations, entryCount) {
     const { isRelationOfType } = require("./StateEngineEntry");
 
     const relsByType = chain(relations)
@@ -48,6 +47,8 @@ class RelatableEntry {
       })
       .thru((kvps) => partition(kvps))
       .value((kvps) => fromPairs(kvps));
+
+    this.entryCount = entryCount;
 
     this.allOf = new Set(relsByType.allOf ?? []);
     this.atLeastOne = new Set(relsByType.atLeastOne ?? []);
@@ -101,7 +102,7 @@ class RelatableEntry {
    * The history source to end the search at.
    * @returns {false | number}
    */
-  check(usedKeysMap, start, end = entryCount) {
+  check(usedKeysMap, start, end = this.entryCount) {
     // Short circuit if we have no relations.
     if (this.keysOfInterest.size === 0) return 0;
 
@@ -215,4 +216,4 @@ class RelatableEntry {
 exports.RelatableEntry = RelatableEntry;
 
 /** An empty relatable entry, for initialization. */
-exports.nilRelatableEntry = new RelatableEntry([]);
+exports.nilRelatableEntry = new RelatableEntry([], 0);

@@ -144,7 +144,10 @@ const $$relations = Symbol("StateEngineEntry.relations");
 
 class StateEngineEntry {
 
-  constructor() {
+  /**
+   * @param {Context["config"]} config
+   */
+  constructor(config) {
     /** The entry's ID. */
     this.entryId = "";
     /** @type {Set<string>} All keys assigned to the entry. */
@@ -155,6 +158,9 @@ class StateEngineEntry {
     this.relator = require("./RelatableEntry").nilRelatableEntry;
     /** @type {Map<AssociationSources, number>} Storage for relations found per source. */
     this.relationCounts = new Map();
+
+    /** @type {import("./config").StateEngineConfig} The State-Engine configuration instance. */
+    this.config = config;
 
     /** @type {ReadonlyArray<AnyRelationDef>} Private backing field for `relations`. */
     this[$$relations] = [];
@@ -181,10 +187,10 @@ class StateEngineEntry {
    * Must be overridden by child classes.
    * 
    * @param {AIDData} data
-   * @param {Map<string, string[]>} issuesMap
+   * @param {Context} ctx
    * @returns {Iterable<StateEngineEntry>}
    */
-  static produceEntries(data, issuesMap) {
+  static produceEntries(data, ctx) {
     throw new TypeError("Override me so I produce entries of this type.");
   }
 
@@ -246,8 +252,10 @@ class StateEngineEntry {
   set relations(value) {
     this[$$relations] = Object.isFrozen(value) ? value : Object.freeze([...value]);
     // Update the relator with the new relations.
-    const { RelatableEntry, nilRelatableEntry } = require("./RelatableEntry");
-    this.relator = value.length === 0 ? nilRelatableEntry : new RelatableEntry(this.relations);
+    const relatable = require("./RelatableEntry");
+    this.relator
+      = value.length === 0 ? relatable.nilRelatableEntry
+      : new relatable.RelatableEntry(this.relations, this.config.get("integer", "entryCount"));
   }
 
   /**

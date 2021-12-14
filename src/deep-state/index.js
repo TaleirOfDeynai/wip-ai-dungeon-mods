@@ -250,9 +250,10 @@ const init = (data) => {
   class LoreEntry extends makeComparable(data, EngineEntryForWorldInfo) {
     /**
      * @param {WorldInfoEntry} worldInfo
+     * @param {Context["config"]} config
      */
-    constructor(worldInfo) {
-      super(worldInfo);
+    constructor(worldInfo, config) {
+      super(worldInfo, config);
 
       /** @type {Map<AssociationSources, boolean>} */
       this.hasMatchedStateMap = new Map();

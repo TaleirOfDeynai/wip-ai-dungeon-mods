@@ -1,5 +1,4 @@
 const { escapeRegExp } = require("../../utils");
-const { entryCount } = require("../config");
 
 /**
  * @param {StateEngineEntry} source
@@ -69,6 +68,7 @@ const parseInputMode = (data) => {
 module.exports = (data) => {
   const { stateEngineContext: ctx } = data;
   const { text, history } = data;
+  const entryCount = ctx.config.get("integer", "entryCount");
 
   ctx.workingHistory = [...history.slice(-1 * entryCount), { text, type: parseInputMode(data) }];
 
