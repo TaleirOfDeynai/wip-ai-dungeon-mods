@@ -49,11 +49,11 @@ const reportOnEntry = function* (worldInfoMap, stateDataCache, entries) {
     /** @type {WorldInfoEntry | undefined} */
     const info = worldInfoMap[entry.entryId];
     const { type, entryId, keys, text } = data;
+    const infoName = info?.name?.trim() || undefined;
     const textForExcerpt = text ?? (info ? getEntryText(info) : "");
-    const ident = stateDataString({ type, entryId, keys });
+    const ident = stateDataString({ type, entryId, keys, infoName });
     const score = entry.score.toFixed(2);
-    const excerpt = textForExcerpt ? makeExcerpt(textForExcerpt) : "(No excerpt available.)";
-    yield `${ident} (${score}) @ ${location}\n\t${excerpt}`;
+    yield `${ident} (${score}) @ ${location}\n\t${makeExcerpt(textForExcerpt)}`;
   }
 };
 

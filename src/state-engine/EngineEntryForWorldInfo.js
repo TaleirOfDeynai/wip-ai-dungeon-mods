@@ -187,6 +187,16 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
   }
 
   /**
+   * Shorthand accessor for `WorldInfoEntry.name`, but produces `undefined` on
+   * a string without useful content.
+   * 
+   * @type {string | undefined}
+   */
+  get infoName() {
+    return this.worldInfo.name?.trim() || undefined;
+  }
+
+  /**
    * The associated text of this entry.
    * 
    * @type {string}
@@ -232,8 +242,8 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    * @returns {EngineDataForWorldInfo}
    */
   toJSON() {
-    const { infoKey } = this;
-    return { ...super.toJSON(), infoKey, forWorldInfo: true };
+    const { infoKey, infoName } = this;
+    return { ...super.toJSON(), infoKey, infoName, forWorldInfo: true };
   }
 }
 

@@ -74,6 +74,10 @@ interface EngineDataForWorldInfo extends StateEngineData {
    */
   forWorldInfo: boolean;
   /**
+   * The name given to the entry by the scenario designer.
+   */
+  infoName?: string;
+  /**
    * The original `keys` of the `WorldInfoEntry` this data was created from.
    * Can be used to check to see if it requires recalculation.
    */

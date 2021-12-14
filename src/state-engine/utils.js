@@ -33,10 +33,11 @@ exports.isParamsTextable = (params) =>
  * @returns {string}
  */
 exports.makeExcerpt = (str) => {
-  const splitUp = str.split(" ").filter(Boolean);
+  const splitUp = str.trim().split(" ").filter(Boolean);
+  if (splitUp.length === 0) return "(No excerpt available.)";
   const shortened = splitUp.slice(0, 10);
   if (splitUp.length === shortened.length) return str;
-  return `${shortened.join(" ").replace(/\.$/, "")}...`;
+  return `${shortened.join(" ").replace(/[.!?,;:~]+$/, "")}...`;
 };
 
 /**
@@ -50,7 +51,9 @@ exports.makeExcerpt = (str) => {
  * @returns {string}
  */
 exports.worldInfoString = (worldInfo, withExcerpt = false) => {
-  const result = `WorldInfo#${worldInfo.id}<${worldInfo.keys}>`;
+  const identifier = worldInfo.name?.trim() || worldInfo.keys.trim();
+  const identPart = identifier ? `<${identifier}>` : "";
+  const result = `WorldInfo#${worldInfo.id}${identPart}`;
   if (!withExcerpt) return result;
 
   return `${result}\n\t${exports.makeExcerpt(getEntryText(worldInfo))}`;
@@ -62,14 +65,19 @@ exports.worldInfoString = (worldInfo, withExcerpt = false) => {
  * @param {Object} parts
  * @param {string} parts.type
  * @param {string} parts.entryId
+ * @param {string} [parts.infoName]
  * @param {string[]} [parts.keys]
  * @param {string} [parts.entryText]
  * @returns {string}
  */
 exports.stateDataString = (parts) => {
-  const { type, keys, entryId, entryText } = parts;
-  const keyPart = keys?.filter(Boolean).join(" & ");
-  const typePart = keyPart ? `$${type}[${keyPart}]` : `$${type}`;
+  const { type, keys, entryId, infoName, entryText } = parts;
+  const keysPart = keys?.filter(Boolean).join(" & ");
+  const typePart
+    = infoName ? infoName
+    : keysPart ? `$${type}[${keysPart}]`
+    : `$${type}`;
+
   const result = `StateEntry#${entryId}<${typePart}>`;
   if (!entryText) return result;
 
