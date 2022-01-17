@@ -480,6 +480,9 @@ Commands:
 * `/context-mode set <module-name>` enables a context mode.
 * `/context-mode current` displays the currently enabled context mode.
 
+Configuration Options:
+* `context-mode.customContextMultiplier` as `number` default `0.33` - How much of `info.maxChars` (the amount of space in the context) should be devoted to world-info.  Use this to change the number of world-info entries presented to the AI, but the amount of story will be decreased or increased as a consequence.  *This requires the context-mode to cooperate with this setting; all the ones listed here do.*
+
 ### Common Context-Modes
 A Context-Mode module that provides a couple of similarly structured contexts.  They largely differ in what words they use when presenting certain kinds of material.
 

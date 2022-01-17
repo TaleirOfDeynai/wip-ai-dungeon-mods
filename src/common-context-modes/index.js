@@ -4,10 +4,9 @@ const { dew, getText } = require("../utils");
 const { chain, iterReverse, iterPosition, limitText } = require("../utils");
 const { getClosestCache, getStateEngineData, buildHistoryData } = require("../context-mode/utils");
 const { cleanText, sumOfUsed, joinedLength } = require("../context-mode/utils");
+const getConfig = require("../context-mode/config");
 const { entrySorter } = require("../state-engine/entrySorting");
 const { entrySelector } = require("../state-engine/entrySelection");
-
-const MAX_MEMORY_FACTOR = 1/3;
 
 /**
  * Constructs a variations on a relatively successful context pattern.
@@ -19,12 +18,9 @@ const contextModifier = (config) => (data) => {
   // Only begin working after the second turn.
   if (data.actionCount <= 2) return;
 
-  const { state, info, playerMemory, summary } = data;
+  const { state, playerMemory, summary } = data;
   const { authorsNote, frontMemory } = state.memory;
-  const { maxChars } = info;
-
-  // Determine how much of the context we're going to commit to extra stuff.
-  const maxMemory = (maxChars * MAX_MEMORY_FACTOR) | 0;
+  const { maxChars, maxMemory } = getConfig(data);
 
   // Materialize the history data into an array, limiting it to the entries
   // that can possibly fit into the context.  This comes out already reversed.
