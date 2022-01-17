@@ -442,6 +442,11 @@ Commands:
   * Data for the output phase is generated in case you want to use the continue function, but it may not have been sent to the AI yet.
 * `/state-engine reset` wipes all the internal caches it maintains in the `state` object.
 
+Configuration Options:
+* `state-engine.entryCount` as `integer` default `20` - How many of the recent actions will be used for world-info association.  Should aim for this to be enough actions to certainly fill the context, even if no world-info is presented.
+* `state-engine.maxCharsOverride` as `integer` default `0` - Experimental; when greater-than zero, this will replace `info.maxChars` with this value.  This was used to test out the 2048 token context length (that doesn't work for scripts).
+* `state-engine.maxCharsMultiplier` as `number` default `1.0` - Experimental; when set, treats `info.maxChars` as if it were multiplied by this value.  This was used to test out the 2048 token context length (that doesn't work for scripts).
+
 ### Deep-State
 This is the bulk of what makes State-Engine work.  The entry types it provides have specialized uses that try to build the best context memory for the latest state of the story.
 

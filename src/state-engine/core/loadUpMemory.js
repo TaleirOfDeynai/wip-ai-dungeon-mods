@@ -2,6 +2,12 @@ const { chain, getText } = require("../../utils");
 const { entrySorter } = require("../entrySorting");
 const { entrySelector } = require("../entrySelection");
 
+/**
+ * We are not in a context modifier, so we will assume 1000 characters can be dedicated
+ * to world-info.  Hopefully the context never gets even smaller.
+ */
+const MAX_MEMORY = 1000;
+
 /** @typedef {Required<Pick<SortableEntry, "text" | "keys" | "relations">>} SortingParts */
 
 /**
@@ -42,7 +48,7 @@ const produceContextMemory = (playerMemory, summary, cacheData, getEntryData) =>
     .map((entry) => ({ ...entry, ...getEntryData(entry.entryId)}))
     .concat(convertPlayerMemory(playerMemory))
     .thru(entrySorter)
-    .thru((notes) => entrySelector(notes, 1001 - resolvedSummary.length, {
+    .thru((notes) => entrySelector(notes, MAX_MEMORY + 1 - resolvedSummary.length, {
       lengthGetter: ({ text }) => text.length + 1
     }))
     .map((note) => note.text.trim())
@@ -53,7 +59,7 @@ const produceContextMemory = (playerMemory, summary, cacheData, getEntryData) =>
 };
 
 /**
- * Uses the natural sorting utiltiies to select entries for display in the memory.
+ * Uses the natural sorting utilities to select entries for display in the memory.
  * Also inserts the Author's Note and Front Memory.
  * 
  * All the data we selected is in the turn cache for later; this step is just to

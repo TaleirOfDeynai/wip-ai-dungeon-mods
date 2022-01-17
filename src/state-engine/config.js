@@ -2,7 +2,11 @@ const { ConfigNamespace } = require("../config-commander/ConfigNamespace");
 
 const defaultConfiguration = {
   /** The number of `history` entries to match to state data. */
-  entryCount: 20
+  entryCount: 20,
+  /** Overrides `info.maxChars` with this value.  Disables `maxCharsMultiplier` when non-zero. */
+  maxCharsOverride: 0,
+  /** Multiplies `info.maxChars` with this value.  Disabled by non-zero `maxCharsOverride`. */
+  maxCharsMultiplier: 1
 };
 
 /** @typedef {ConfigNamespace<typeof defaultConfiguration>} StateEngineConfig */
