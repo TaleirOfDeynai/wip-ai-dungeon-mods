@@ -1,4 +1,4 @@
-const { getEntryText } = require("../utils");
+const { dew, getEntryText } = require("../utils");
 
 /**
  * Due to retarded limits in TypeScript, you can't use obvious type-guards
@@ -51,9 +51,14 @@ exports.makeExcerpt = (str) => {
  * @returns {string}
  */
 exports.worldInfoString = (worldInfo, withExcerpt = false) => {
-  const identifier = worldInfo.name?.trim() || worldInfo.keys.trim();
-  const identPart = identifier ? `<${identifier}>` : "";
-  const result = `WorldInfo#${worldInfo.id}${identPart}`;
+  const identifier = dew(() => {
+    const name = worldInfo.name?.trim();
+    if (name) return `<${name}>`;
+    const keys = worldInfo.keys.trim();
+    if (keys) return `[${keys}]`;
+    return "";
+  });
+  const result = `WorldInfo#${worldInfo.id}${identifier}`;
   if (!withExcerpt) return result;
 
   return `${result}\n\t${exports.makeExcerpt(getEntryText(worldInfo))}`;

@@ -1,7 +1,7 @@
 /// <reference path="./state-engine.d.ts" />
 const { chain, tuple, fromPairs, partition } = require("../utils");
 const { countOccurrences, escapeRegExp } = require("../utils");
-const { isInclusiveKeyword, isExclusiveKeyword } = require("./StateEngineEntry");
+const { isInclusiveKeyword, isExclusiveKeyword } = require("./parsers/checks");
 
 /** @typedef {import("../utils")[]} */
 

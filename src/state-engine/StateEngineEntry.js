@@ -1,121 +1,6 @@
 const { getText } = require("../utils");
 const { isParamsFor, isParamsTextable, stateDataString } = require("./utils");
-
-/**
- * @param {any} value
- * @param {string} type
- * @returns {boolean}
- */
-const hasTypeOf = (value, type) => "type" in value && value.type === type;
-const relationTypes = new Set(["allOf", "atLeastOne", "immediate", "negated"]);
-
-/** @type {(value: AnyMatcherDef) => value is KeywordDef<"include">} */
-exports.isInclusiveKeyword = (value) => hasTypeOf(value, "include");
-/** @type {(value: AnyMatcherDef) => value is KeywordDef<"exclude">} */
-exports.isExclusiveKeyword = (value) => hasTypeOf(value, "exclude");
-/** @type {(value: AnyMatcherDef) => value is AnyKeywordDef} */
-exports.isKeyword = (value) => exports.isInclusiveKeyword(value) || exports.isExclusiveKeyword(value);
-/** @type {(value: AnyMatcherDef) => value is AnyRelationDef} */
-exports.isRelation = (value) => "type" in value && relationTypes.has(value.type);
-/** @type {<TType extends RelationTypes>(value: AnyMatcherDef, type: TType) => value is RelationDef<TType>} */
-exports.isRelationOfType = (value, type) => hasTypeOf(value, type);
-/** @type {(value: AnyMatcherDef) => value is RelationDef<"negated">} */
-exports.isNegatedRelation = (value) => exports.isRelationOfType(value, "negated");
-/** @type {(value: AnyMatcherDef) => value is RelationDef<Exclude<RelationTypes, "negated">>} */
-exports.isInclusiveRelation = (value) => !exports.isNegatedRelation(value);
-
-const reExactMatch = /^"(['\w ]+)"$/;
-const reInclusiveKeyword = /^\+?(["'\w ]+)$/;
-const reExclusiveKeyword = /^-(["'\w ]+)$/;
-const reRelation = /^([:!?@])([\w ]+)$/;
-
-/** Common parsers for parsing state entry definitions. */
-exports.parsers = {
-  /**
-   * Matches keywords intended for inclusion matching; accepts an optional prefixed "+".
-   * 
-   * @type {PatternMatcher<KeywordDef<"include">>}
-   */
-  includedKeyword: (text) => {
-    if (!text) return undefined;
-    const kwMatch = reInclusiveKeyword.exec(text);
-    if (!kwMatch) return undefined;
-    const exMatch = reExactMatch.exec(kwMatch[1]);
-    if (exMatch) return { type: "include", exactMatch: true, value: exMatch[1] };
-    return { type: "include", exactMatch: false, value: kwMatch[1] };
-  },
-  /**
-   * Matches keywords intended for exclusion matching; requires a prefixed "-".
-   * 
-   * @type {PatternMatcher<KeywordDef<"exclude">>}
-   */
-  excludedKeyword: (text) => {
-    if (!text) return undefined;
-    const kwMatch = reExclusiveKeyword.exec(text);
-    if (!kwMatch) return undefined;
-    const exMatch = reExactMatch.exec(kwMatch[1]);
-    if (exMatch) return { type: "exclude", exactMatch: true, value: exMatch[1] };
-    return { type: "exclude", exactMatch: false, value: kwMatch[1] };
-  },
-  /**
-   * Matches the relation patterns.  Requires a special prefix:
-   * - `:` - An "all of" relation.
-   * - `?` - An "at least one" relation.
-   * - `@` - An "immediate" relation.
-   * - `!` - A "negated" relation.
-   * 
-   * @type {PatternMatcher<AnyRelationDef>}
-   */
-  relation: (text) => {
-    if (!text) return undefined;
-    const match = reRelation.exec(text);
-    if (!match) return undefined;
-    const [, typePart, topic] = match;
-    switch (typePart) {
-      case ":": return { type: "allOf", topic };
-      case "?": return { type: "atLeastOne", topic };
-      case "@": return { type: "immediate", topic };
-      case "!": return { type: "negated", topic };
-      default: return undefined;
-    }
-  },
-  /**
-   * A composite parser that matches relation and keyword patterns.
-   * 
-   * @type {PatternMatcher<AnyMatcherDef>}
-   */
-  matcher: (text) => {
-    const matched
-      = exports.parsers.relation(text)
-      ?? exports.parsers.includedKeyword(text)
-      ?? exports.parsers.excludedKeyword(text);
-    if (matched) return matched;
-    return undefined;
-  }
-};
-
-/**
- * Matches the given keywords using the given regular expression.  If it fails
- * to match, the keyword is filtered from the result..
- * 
- * @param {string[]} keywords 
- * @param {RegExp} reMatcher
- * @returns {string[]}
- */
-exports.parseKeywords = (keywords, reMatcher) => {
-  /** @type {string[]} */
-  const matches = [];
-  if (!keywords || !keywords.length) return matches;
-
-  for (const rootKeyword of keywords) {
-    const match = reMatcher.exec(rootKeyword);
-    if (!match) continue;
-    const keyword = match[1].trim();
-    if (keyword) matches.push(keyword);
-  }
-
-  return matches;
-};
+const { isInclusiveKeyword, isInclusiveRelation } = require("./parsers/checks");
 
 /**
  * Error for general errors involving `StateEngineEntry`.
@@ -262,14 +147,14 @@ class StateEngineEntry {
    * Whether this entry has inclusive keywords.
    */
   get hasInclusiveKeywords() {
-    return this.keywords.some(exports.isInclusiveKeyword);
+    return this.keywords.some(isInclusiveKeyword);
   }
 
   /**
    * Whether this entry has inclusive relations.
    */
   get hasInclusiveRelations() {
-    return this.relations.some(exports.isInclusiveRelation);
+    return this.relations.some(isInclusiveRelation);
   }
 
   /**

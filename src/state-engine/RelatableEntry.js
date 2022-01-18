@@ -31,7 +31,7 @@ class RelatableEntry {
    * @param {number} entryCount
    */
   constructor(relations, entryCount) {
-    const { isRelationOfType } = require("./StateEngineEntry");
+    const { isRelationOfType } = require("./parsers/checks");
 
     const relsByType = chain(relations)
       .map((relDef) => {

@@ -13,8 +13,24 @@ interface StateEngineEntryClass {
   produceEntries: (typeof import("./StateEngineEntry").StateEngineEntry)["produceEntries"];
 }
 
+interface PatternExtractor<T> {
+  (entry: Maybe<WorldInfoEntry>): T | undefined;
+}
+
 interface PatternMatcher<T> {
   (text: Maybe<string>): T | undefined;
+}
+
+/**
+ * Indicates how an entry type was extracted.
+ * - `"vanilla"` - One of the built-in AI Dungeon entry types, IE: `"worldDescription"` or `"race"`.
+ * - `"state-engine"` - A type that was parsed in a State-Engine format or from the `$type` attribute.
+ * - `"unknown"` - An unknown type in an unknown format.
+ */
+type EntryTypes = "vanilla" | "state-engine" | "unknown";
+interface EntryTypeDef<TType extends EntryTypes> {
+  type: TType;
+  value: string;
 }
 
 type KeywordTypes = "include" | "exclude";
@@ -30,9 +46,20 @@ interface RelationDef<TType extends RelationTypes> {
   topic: string;
 }
 
+type AnyEntryTypeDef = EntryTypeDef<EntryTypes>;
 type AnyKeywordDef = KeywordDef<KeywordTypes>;
 type AnyRelationDef = RelationDef<RelationTypes>;
 type AnyMatcherDef = AnyKeywordDef | AnyRelationDef;
+
+/**
+ * An object that provides `WorldInfoEntry` extraction services.
+ */
+interface EntryExtractor {
+  type: PatternExtractor<AnyEntryTypeDef>;
+  topics: PatternExtractor<string[]>;
+  keywords: PatternExtractor<AnyKeywordDef[]>;
+  relations: PatternExtractor<AnyRelationDef[]>;
+}
 
 interface StateEngineData {
   /**
@@ -73,6 +100,10 @@ interface EngineDataForWorldInfo extends StateEngineData {
    * Indicates that this entry is associated with a world-info entry.
    */
   forWorldInfo: boolean;
+  /**
+   * The type given to the entry by the scenario designer.
+   */
+  infoType?: WorldInfoEntry["type"];
   /**
    * The name given to the entry by the scenario designer.
    */

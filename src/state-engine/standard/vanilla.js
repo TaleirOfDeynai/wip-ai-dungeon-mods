@@ -1,8 +1,8 @@
 /// <reference path="../state-engine.d.ts" />
-const { chain, partition, fromPairs, tuple } = require("../../utils");
+const { chain, partition, fromPairs, tuple, is } = require("../../utils");
 const { addStateEntry } = require("../registry");
-const { isRelation } = require("../StateEngineEntry");
-const { EngineEntryForWorldInfo, parsers } = require("../EngineEntryForWorldInfo");
+const { isRelation } = require("../parsers/checks");
+const { EngineEntryForWorldInfo } = require("../EngineEntryForWorldInfo");
 
 /**
  * Does some global setup for this module.
@@ -20,13 +20,16 @@ const { EngineEntryForWorldInfo, parsers } = require("../EngineEntryForWorldInfo
 
     /**
      * A special type checker for this entry; an `undefined` type will be treated as
-     * a vanilla entry.
+     * a vanilla entry, as well as any entry that did not get parsed from a State-Engine
+     * format.
      * 
-     * @param {string | undefined} type 
+     * @param {AnyEntryTypeDef | undefined} typeDef 
      * @returns {boolean}
      */
-    static checkType(type) {
-      return typeof type !== "string" || super.checkType(type);
+    static checkType(typeDef) {
+      if (!is.object(typeDef)) return true;
+      if (typeDef.type !== "state-engine") return true;
+      return super.checkType(typeDef);
     }
 
     /**
@@ -34,28 +37,8 @@ const { EngineEntryForWorldInfo, parsers } = require("../EngineEntryForWorldInfo
      * @returns {Omit<StateEngineData, "entryId">}
      */
     parse(worldInfo) {
-      const { keys } = worldInfo;
-      /** @type {AnyMatcherDef[]} */
-      const matchers = keys
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean)
-        .map((text) => {
-          const matcher = parsers.matcher(text);
-          if (matcher) return matcher;
-          // Fall back on a simple inclusive keyword.
-          /** @type {KeywordDef<"include">} */
-          const result = { type: "include", exactMatch: false, value: text };
-          return result;
-        });
-
-      // @ts-ignore - TS is stupid with defaults in destructuring.
-      const { relations = [], keywords = [] } = chain(matchers)
-        .map((matcher) => isRelation(matcher) ? tuple("relations", matcher) : tuple("keywords", matcher))
-        .thru((kvps) => partition(kvps))
-        .value((kvps) => fromPairs(kvps));
-
-      return { topics: [], type: "VanillaEntry", relations, keywords };
+      const { topics, relations, keywords } = super.parse(worldInfo);
+      return { type: "VanillaEntry", topics, relations, keywords };
     }
   }
 

@@ -8,5 +8,9 @@
     "**/.hg": true,
     "**/CVS": true,
     "**/.DS_Store": true
-  }
+  },
+  "cSpell.words": [
+    "combinators",
+    "Parsimmon"
+  ]
 }

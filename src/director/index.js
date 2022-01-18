@@ -44,7 +44,7 @@ const init = (data) => {
     validator() {
       const issues = super.validator();
       if (this.topics.size > 1)
-        issues.push(`World info entry \`${this.infoKey}\` can have, at most, one topic.`);
+        issues.push(`${this.bestName} can have, at most, one topic.`);
       return issues;
     }
 

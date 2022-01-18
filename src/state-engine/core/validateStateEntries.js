@@ -26,7 +26,16 @@ module.exports = (data) => {
   data.message = chain(ctx.validationIssues)
     .map(([renderAs, issues]) => [
       `\t${renderAs}`,
-      ...issues.map((issue) => (`\t\t• ${issue}`))
+      // Format issues so that the first line of each issue has a bullet and
+      // all remaining lines are aligned.  AI Dungeon's message box will present
+      // messages with whitespace preserved.
+      ...chain(issues)
+        .map((issue) => issue.split("\n").map(([firstLine, ...restLines]) => [
+          `\t\t• ${firstLine}`,
+          ...restLines.map((issueLine) => `\t\t  ${issueLine}`)
+        ]))
+        .flatten()
+        .value()
     ])
     .flatten()
     .value((lines) => {

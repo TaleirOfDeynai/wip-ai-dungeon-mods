@@ -5,6 +5,7 @@ const { dew, chain, getEntryText } = require("../utils");
 const { MatchCommand } = require("../commands");
 const { stateModule } = require("./state-module");
 const { ConfigNamespace } = require("./ConfigNamespace");
+const extractor = require("../state-engine/parsers/extract");
 
 /**
  * Executes the commands specified in `$Config` world-info objects.
@@ -24,7 +25,19 @@ exports.contextModifier = (pipeline) => (aidData) => {
   const executedConfigs = new Set($$configCommanderExec);
 
   const needExec = chain(aidData.worldEntries)
-    .filter((wi) => wi.keys === "$Config")
+    .filter((wi) => {
+      try {
+        // We only want State-Engine `Config` entries.
+        const theType = extractor.type(wi);
+        if (!theType) return false;
+        if (theType.type !== "state-engine") return false;
+        return theType.value === "Config";
+      }
+      catch (err) {
+        // The extractor can throw `ParsingError`.  Ignore errors here.
+        return false;
+      }
+    })
     .filter((wi) => !executedConfigs.has(wi.id))
     .toArray();
   
@@ -49,20 +62,21 @@ exports.contextModifier = (pipeline) => (aidData) => {
       aidData.message = "";
       aidData.text = commandText;
 
+      const formattedCmd = `\t${commandText}`;
       const execCommand = pipeline.commandHandler.checkCommand(aidData);
 
       if (execCommand == null) {
         cmdProblems.push([
-          commandText,
-          "  Command not found."
+          formattedCmd,
+          "\t\tCommand not found."
         ].join("\n"));
       }
       else if (aidData.message) {
         cmdMessages.push([
-          commandText,
+          formattedCmd,
           ...aidData.message
             .split("\n")
-            .map((ln) => `  ${ln}`)
+            .map((ln) => `\t\t${ln}`)
         ].join("\n"))
       }
     }

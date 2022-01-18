@@ -2,7 +2,6 @@
 const { tuple } = require("../../utils");
 const { isParamsFor } = require("../utils");
 const { addStateEntry } = require("../registry");
-const { isRelation } = require("../StateEngineEntry");
 const { EngineEntryForWorldInfo } = require("../EngineEntryForWorldInfo");
 
 /**
@@ -26,9 +25,9 @@ const { EngineEntryForWorldInfo } = require("../EngineEntryForWorldInfo");
     validator() {
       const issues = super.validator();
       if (this.topics.size !== 1)
-        issues.push(`World info entry \`${this.infoKey}\` must have exactly one topic.`);
+        issues.push(`${this.bestName} must have exactly one topic.`);
       if (!this.hasMatchers)
-        issues.push(`World info entry \`${this.infoKey}\` requires at least one matcher.`);
+        issues.push(`${this.bestName} requires at least one matcher.`);
       return issues;
     }
 

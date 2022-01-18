@@ -7,6 +7,7 @@
     "aid-bundler": "git://github.com/TaleirOfDeynai/aid-bundler.git",
     "tiny-tfidf": "0.9.1",
     "lancaster-stemmer": "2.0.0",
+    "parsimmon": "1.18.0",
     "stopwords": "0.0.9"
   }
 }

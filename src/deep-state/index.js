@@ -35,7 +35,7 @@ const implicitInclusionDiceSides = 20;
 const init = (data) => {
   const { EngineEntryForWorldInfo } = require("../state-engine/EngineEntryForWorldInfo");
   const { makeComparable } = require("../stemming/ComparableEntryMixin");
-  const { isExclusiveKeyword, isNegatedRelation } = require("../state-engine/StateEngineEntry");
+  const { isExclusiveKeyword, isNegatedRelation } = require("../state-engine/parsers/checks");
 
   const { info } = data;
 
@@ -67,9 +67,9 @@ const init = (data) => {
     validator() {
       const issues = super.validator();
       if (!this.topics.size)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one topic.`);
+        issues.push(`${this.bestName} must have at least one topic.`);
       if (this.relations.length)
-        issues.push(`World info entry \`${this.infoKey}\` cannot have relation matchers.`);
+        issues.push(`${this.bestName} cannot have relation matchers.`);
       return issues;
     }
 
@@ -134,9 +134,9 @@ const init = (data) => {
     validator() {
       const issues = super.validator();
       if (!this.topics.size)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one topic.`);
+        issues.push(`${this.bestName} must have at least one topic.`);
       if (this.relations.length)
-        issues.push(`World info entry \`${this.infoKey}\` cannot have relation matchers.`);
+        issues.push(`${this.bestName} cannot have relation matchers.`);
       return issues;
     }
 
@@ -183,7 +183,7 @@ const init = (data) => {
     validator() {
       const issues = super.validator();
       if (!this.topics.size)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one topic.`);
+        issues.push(`${this.bestName} must have at least one topic.`);
       return issues;
     }
 
@@ -230,9 +230,9 @@ const init = (data) => {
     validator() {
       const issues = super.validator();
       if (this.topics.size)
-        issues.push(`World info entry \`${this.infoKey}\` cannot be given a topic.`);
+        issues.push(`${this.bestName} cannot be given a topic.`);
       if (this.relations.length || this.keywords.length)
-        issues.push(`World info entry \`${this.infoKey}\` cannot have any matchers.`);
+        issues.push(`${this.bestName} cannot have any matchers.`);
       return issues;
     }
 
@@ -383,9 +383,9 @@ const init = (data) => {
     validator() {
       const issues = super.validator();
       if (this.topics.size > 1)
-        issues.push(`World info entry \`${this.infoKey}\` cannot have more than one topic.`);
+        issues.push(`${this.bestName} cannot have more than one topic.`);
       if (this.keywords.length === 0 && this.relations.length === 0)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one matcher.`);
+        issues.push(`${this.bestName} must have at least one matcher.`);
       return issues;
     }
 

@@ -1,125 +1,8 @@
-const { chain, partition, fromPairs, tuple, getEntryText } = require("../utils");
+const { getEntryText, shutUpTS } = require("../utils");
 const { worldInfoString } = require("./utils");
 const { StateEngineEntry, BadStateEntryError, InvalidTypeError } = require("./StateEngineEntry");
-const { isRelation, parsers: baseParsers } = require("./StateEngineEntry");
-
-const reInfoEntry = /^\$(\w+?)((?:\[|\().*)?$/;
-const reInfoDeclaration = /^(?:\[([\w &]*?)\])?(\(.+?\))?$/;
-const reInfoKeywords = /^\((.*)?\)$/;
-
-exports.parsers = {
-  ...baseParsers,
-  /**
-   * Parses an info entry into its type and the info declaration:
-   * - "$Scene" => `["Scene", undefined]`
-   * - "$Player[Ike & Hero]" => `["Player", "[Ike & Hero]"]`
-   * - "$Lore[Ancient Temple]" => `["Lore", "[Ancient Temple]"]`
-   * - "$Lore[Ancient Temple & Ike]" => `["Lore", "[Ancient Temple & Ike]"]`
-   * - "$Lore[Ancient Temple](temple; ancient)" => `["Lore", "[Ancient Temple](temple; ancient)"]`
-   * - "$State(weapon; sword)" => `["State", "(weapon; sword)"]`
-   * 
-   * @type {PatternMatcher<[type: string, decPart: string | undefined]>}
-   */
-  infoEntry: (text) => {
-    if (!text) return undefined;
-    const matched = reInfoEntry.exec(text);
-    if (!matched) return undefined;
-    const [, type, decPart] = matched;
-    return [type, decPart];
-  },
-  /**
-   * Parses an info declaration into its separated topics and matcher part:
-   * - "" => `[[], undefined]`
-   * - "[]" => `[[], undefined]`
-   * - "[Ike]" => `[["Ike"], undefined]`
-   * - "[Ike & Hero]" => `[["Ike", "Hero"], undefined]`
-   * - "[Goddess Hall](:Ancient Temple; goddess)" => `[["Goddess Hall"], "(:Ancient Temple; goddess)"]`
-   * - "(:Ancient Temple; goddess)" => `[[], "(:Ancient Temple; goddess)"]`
-   * 
-   * @type {PatternMatcher<[topics: string[], matchersPart: string | undefined]>}
-   */
-  infoDeclaration: (decPart) => {
-    // We do allow empty/missing 
-    if (!decPart) return [[], undefined];
-    const matched = reInfoDeclaration.exec(decPart);
-    if (!matched) return undefined;
-    const [, topicsPart, matchersPart] = matched;
-    const topics = !topicsPart ? [] : topicsPart.split("&").map((k) => k.trim());
-    // We'll fail if any topic is empty, IE the user provided `" & Something"`.
-    if (topics.some((topic) => !topic)) return undefined;
-    return [topics, matchersPart];
-  },
-  /**
-   * Parses a keyword part:
-   * - undefined => `[]`
-   * - "" => `[]`
-   * - "()" => `[]`
-   * - "(:GoddessHall; temple; -ancient)" => `[ParsedRelation, ParsedKeyword, ParsedKeyword]`
-   * 
-   * @type {PatternMatcher<AnyMatcherDef[]>}
-   */
-  infoMatchers: (matchersPart) => {
-    // Allow `""` and `undefined` to count as a successful match. 
-    if (!matchersPart) return [];
-    // But if we must parse, and it fails, its a failure.
-    const matched = reInfoKeywords.exec(matchersPart);
-    if (!matched) return undefined;
-    const [, matchersHunk] = matched;
-    const matcherFrags = matchersHunk.split(";").map((frag) => frag.trim()).filter(Boolean);
-    if (matcherFrags.length === 0) return [];
-
-    /** @type {Array<AnyMatcherDef>} */
-    const matchers = [];
-    for (const matcherFrag of matcherFrags) {
-      const matched = baseParsers.matcher(matcherFrag);
-      if (!matched) return undefined;
-      matchers.push(matched);
-    }
-    return matchers;
-  }
-};
-
-/**
- * Extracts the type for a `StateEngineEntry` from a `WorldInfoEntry`.
- * 
- * @param {WorldInfoEntry} worldInfo
- * @returns {string | undefined}
- */
-exports.extractType = (worldInfo) => {
-  const [type] = exports.parsers.infoEntry(worldInfo.keys) ?? [];
-  return type;
-};
-
-/**
- * The default World Info parser for a standard State Entry.
- * 
- * @param {WorldInfoEntry["keys"]} infoKey
- * @returns {Omit<StateEngineData, "entryId"> | undefined}
- */
- exports.infoKeyParserImpl = (infoKey) => {
-  const {
-    infoEntry, infoDeclaration, infoMatchers
-  } = exports.parsers;
-
-  const matchedEntry = infoEntry(infoKey);
-  if (!matchedEntry) return undefined;
-  const [type, decPart] = matchedEntry;
-
-  const matchedDec = infoDeclaration(decPart);
-  if (!matchedDec) return undefined;
-  const [topics, keywordsPart] = matchedDec;
-  const matchers = infoMatchers(keywordsPart);
-  if (!matchers) return undefined;
-
-  // @ts-ignore - TS is stupid with defaults in destructuring.
-  // It's still typing correctly, though.
-  const { relations = [], keywords = [] } = chain(matchers)
-    .map((matcher) => isRelation(matcher) ? tuple("relations", matcher) : tuple("keywords", matcher))
-    .thru((kvps) => partition(kvps))
-    .value((kvps) => fromPairs(kvps));
-
-  return { type, topics, relations, keywords };
-};
+const extractor = require("./parsers/extract");
+const { ParsingError } = require("./parsers/errors");
 
 class EngineEntryForWorldInfo extends StateEngineEntry {
   /**
@@ -137,11 +20,11 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    * Checks if the given `type` matches this type of entry.  It is possible
    * to receive `undefined` as `type`.
    * 
-   * @param {string | undefined} type
+   * @param {AnyEntryTypeDef | undefined} typeDef
    * @returns {boolean}
    */
-  static checkType(type) {
-    return type === this.forType;
+  static checkType(typeDef) {
+    return typeDef?.type === "state-engine" && typeDef.value === this.forType;
   }
 
   /**
@@ -152,8 +35,8 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
   static *produceEntries(data, { config, validationIssues }) {
     for (const info of data.worldEntries) {
       try {
-        const type = exports.extractType(info);
-        if (!this.checkType(type)) continue;
+        const theType = extractor.type(info);
+        if (!this.checkType(theType)) continue;
         yield new this(info, config);
       }
       catch(err) {
@@ -162,6 +45,15 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
           // But just in case of shenanigans, we count this as just a mismatch
           // from a child-type and just continue.
           console.log(err.message);
+          continue;
+        }
+        if (err instanceof ParsingError) {
+          // Something happened in the parser combinators.  The user needs to
+          // fix something in this entry.
+          const renderAs = worldInfoString(info);
+          const issues = validationIssues.get(renderAs) ?? [];
+          issues.push(err.details);
+          validationIssues.set(renderAs, issues);
           continue;
         }
         if (err instanceof BadStateEntryError) {
@@ -176,6 +68,26 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
         throw err;
       }
     }
+  }
+
+  /**
+   * A helper to get the best way to identify this entry.
+   * 
+   * @type {string}
+   */
+  get bestName() {
+    if (this.infoName) return `World-Info \`${this.infoName}\``;
+    if (this.infoKey) return `World-Info entry ${this.infoType}[${this.infoKey}]`;
+    return `World-Info entry ${this.infoType}#${this.entryId}`;
+  }
+
+  /**
+   * Shorthand accessor for `WorldInfoEntry.type`.
+   * 
+   * @type {string}
+   */
+  get infoType() {
+    return this.worldInfo.type;
   }
 
   /**
@@ -216,25 +128,32 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    * @returns {Omit<StateEngineData, "entryId">}
    */
   parse(worldInfo) {
-    const { keys } = worldInfo;
-    if (keys.indexOf(",") !== -1)
-      throw new BadStateEntryError([
-        "The World Info entry's keys contain a comma.",
-        "Keywords should be separated by a semi-colon (;), instead."
-      ].join("  "));
+    /** @type {typeof EngineEntryForWorldInfo} */
+    const ctor = shutUpTS(this.constructor);
+    const parsedType = extractor.type(worldInfo);
+    const topics = extractor.topics(worldInfo) ?? [];
+    const keywords = extractor.keywords(worldInfo) ?? [];
+    const relations = extractor.relations(worldInfo) ?? [];
 
-    const parsedResult = exports.infoKeyParserImpl(keys);
-    if (!parsedResult)
+    if (!parsedType)
       throw new BadStateEntryError(
         `Failed to parse World Info entry as a \`${this.type}\`.`
       );
-    if (parsedResult.type !== this.type)
+
+    // It is possible that some entries may wish to map vanilla entry types
+    // to State-Engine types, like AID's "character" to Deep-State's "NPC",
+    // for instance.  If `checkType` says it's the right type, we'll assume
+    // it knows what it is doing.
+    if (!ctor.checkType(parsedType))
       throw new InvalidTypeError([
         `Expected World Info entry to parse as a \`${this.type}\``,
-        `but it parsed as a \`${parsedResult.type}\` instead.`
+        `but it parsed as a \`${parsedType.value}\` instead.`
       ].join(", "));
 
-    return parsedResult;
+    return {
+      type: ctor.forType,
+      topics, keywords, relations
+    };
   }
 
   /**
@@ -243,8 +162,8 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    * @returns {EngineDataForWorldInfo}
    */
   toJSON() {
-    const { infoKey, infoName } = this;
-    return { ...super.toJSON(), infoKey, infoName, forWorldInfo: true };
+    const { infoType, infoKey, infoName } = this;
+    return { ...super.toJSON(), infoType, infoKey, infoName, forWorldInfo: true };
   }
 }
 

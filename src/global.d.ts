@@ -6,6 +6,8 @@ declare interface Array<T> {
   filter(predicate: BooleanConstructor): Exclude<T, null | undefined>[];
 }
 
+declare type TypePredicate<T> = (value: any) => value is T;
+
 declare interface HistoryEntry {
   text: string;
   type: "do" | "say" | "story" | "continue";
