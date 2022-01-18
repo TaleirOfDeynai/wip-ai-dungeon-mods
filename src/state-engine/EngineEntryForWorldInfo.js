@@ -28,7 +28,7 @@ exports.parsers = {
     return [type, decPart];
   },
   /**
-   * Parses an info declaration into its separated keys and matcher part:
+   * Parses an info declaration into its separated topics and matcher part:
    * - "" => `[[], undefined]`
    * - "[]" => `[[], undefined]`
    * - "[Ike]" => `[["Ike"], undefined]`
@@ -36,18 +36,18 @@ exports.parsers = {
    * - "[Goddess Hall](:Ancient Temple; goddess)" => `[["Goddess Hall"], "(:Ancient Temple; goddess)"]`
    * - "(:Ancient Temple; goddess)" => `[[], "(:Ancient Temple; goddess)"]`
    * 
-   * @type {PatternMatcher<[keys: string[], matchersPart: string | undefined]>}
+   * @type {PatternMatcher<[topics: string[], matchersPart: string | undefined]>}
    */
   infoDeclaration: (decPart) => {
     // We do allow empty/missing 
     if (!decPart) return [[], undefined];
     const matched = reInfoDeclaration.exec(decPart);
     if (!matched) return undefined;
-    const [, keysPart, matchersPart] = matched;
-    const keys = !keysPart ? [] : keysPart.split("&").map((k) => k.trim());
-    // We'll fail if any key is empty, IE the user provided `" & Something"`.
-    if (keys.some((key) => !key)) return undefined;
-    return [keys, matchersPart];
+    const [, topicsPart, matchersPart] = matched;
+    const topics = !topicsPart ? [] : topicsPart.split("&").map((k) => k.trim());
+    // We'll fail if any topic is empty, IE the user provided `" & Something"`.
+    if (topics.some((topic) => !topic)) return undefined;
+    return [topics, matchersPart];
   },
   /**
    * Parses a keyword part:
@@ -107,7 +107,7 @@ exports.extractType = (worldInfo) => {
 
   const matchedDec = infoDeclaration(decPart);
   if (!matchedDec) return undefined;
-  const [keys, keywordsPart] = matchedDec;
+  const [topics, keywordsPart] = matchedDec;
   const matchers = infoMatchers(keywordsPart);
   if (!matchers) return undefined;
 
@@ -118,7 +118,7 @@ exports.extractType = (worldInfo) => {
     .thru((kvps) => partition(kvps))
     .value((kvps) => fromPairs(kvps));
 
-  return { type, keys, relations, keywords };
+  return { type, topics, relations, keywords };
 };
 
 class EngineEntryForWorldInfo extends StateEngineEntry {
@@ -129,7 +129,7 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
   constructor(worldInfo, config) {
     super(config);
     const parsedResult = this.parse(worldInfo);
-    this.init(worldInfo.id, parsedResult.keys, parsedResult);
+    this.init(worldInfo.id, parsedResult.topics, parsedResult);
     this.worldInfo = worldInfo;
   }
 

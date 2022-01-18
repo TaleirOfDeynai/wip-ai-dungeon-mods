@@ -4,12 +4,12 @@ const { escapeRegExp } = require("../../utils");
  * @param {StateEngineEntry} source
  * @param {StateEngineEntry} target
  */
-const countOfUniqueKeys = (source, target) => {
-  if (source.keys.size === 0) return 0;
+const countOfUniqueTopics = (source, target) => {
+  if (source.topics.size === 0) return 0;
 
   let count = 0;
-  for (const srcKey of source.keys)
-    if (!target.keys.has(srcKey)) count += 1;
+  for (const srcTopic of source.topics)
+    if (!target.topics.has(srcTopic)) count += 1;
   return count;
 };
 
@@ -24,16 +24,16 @@ const countOfUniqueKeys = (source, target) => {
 const stateSorter = (a, b) => {
   // When one references the other, sort the one doing the referencing later.
   // It is possible that they reference each other; this is undefined behavior.
-  if (a.relator.isInterestedIn(b.keys)) return 1;
-  if (b.relator.isInterestedIn(a.keys)) return -1;
+  if (a.relator.isInterestedIn(b.topics)) return 1;
+  if (b.relator.isInterestedIn(a.topics)) return -1;
 
   // When one has more relations, sort that one later.
-  const relCount = a.relator.keysOfInterest.size - b.relator.keysOfInterest.size;
+  const relCount = a.relator.topicsOfInterest.size - b.relator.topicsOfInterest.size;
   if (relCount !== 0) return relCount;
 
-  // Compare the keys, sorting the entry with more unique keys down.
-  const aCount = countOfUniqueKeys(a, b);
-  const bCount = countOfUniqueKeys(b, a);
+  // Compare the topics, sorting the entry with more unique topics down.
+  const aCount = countOfUniqueTopics(a, b);
+  const bCount = countOfUniqueTopics(b, a);
   if (aCount !== bCount) return aCount - bCount;
 
   return 0;

@@ -8,7 +8,7 @@ const { entrySelector } = require("../entrySelection");
  */
 const MAX_MEMORY = 1000;
 
-/** @typedef {Required<Pick<SortableEntry, "text" | "keys" | "relations">>} SortingParts */
+/** @typedef {Required<Pick<SortableEntry, "text" | "topics" | "relations">>} SortingParts */
 
 /**
  * Yields lines from the player memory, ignoring lines starting with a `#` symbol.
@@ -81,7 +81,7 @@ module.exports = (data) => {
       const entry = ctx.entriesMap[id];
       return {
         text: getText(entry),
-        keys: entry.keys,
+        topics: entry.topics,
         relations: entry.relations.filter((relDef) => relDef.type !== "negated")
       };
     }

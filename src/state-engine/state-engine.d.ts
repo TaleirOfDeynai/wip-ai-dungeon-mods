@@ -27,7 +27,7 @@ interface KeywordDef<TType extends KeywordTypes> {
 type RelationTypes = "allOf" | "atLeastOne" | "immediate" | "negated";
 interface RelationDef<TType extends RelationTypes> {
   type: TType;
-  key: string;
+  topic: string;
 }
 
 type AnyKeywordDef = KeywordDef<KeywordTypes>;
@@ -36,7 +36,7 @@ type AnyMatcherDef = AnyKeywordDef | AnyRelationDef;
 
 interface StateEngineData {
   /**
-   * The key of this entry.  Common types:
+   * The type of this entry.  Common types:
    * - `Player` - For a player's information; high-priority.
    * - `NPC` - For an NPC's information.
    * - `Scene` - For important scene information; high-priority.
@@ -57,7 +57,7 @@ interface StateEngineData {
    * otherwise not applicable to the `type`.  The first element is typically treated
    * like a name for the instance.
    */
-  keys: string[];
+  topics: string[];
   /**
    * An array of relation configuration objects.
    */
@@ -85,7 +85,7 @@ interface EngineDataForWorldInfo extends StateEngineData {
 }
 
 interface StateDataForModifier extends StateEngineData {
-  keys: Set<string>;
+  topics: Set<string>;
 }
 
 type StateAssociations = Map<AssociationSources, Set<StateEngineEntry["entryId"]>>;
@@ -103,7 +103,7 @@ interface StateModifierFn {
   (stateData: StateEngineData, allStates: StateEngineData[]): StateEngineData;
 }
 
-type UsedKeysMap = Map<number, Set<string>>;
+type UsedTopicsMap = Map<number, Set<string>>;
 
 interface AssociationParamTypes {
   "implicit": { source: "implicit" };
@@ -111,14 +111,14 @@ interface AssociationParamTypes {
   "playerMemory": { source: "playerMemory", entry: string };
   "authorsNote": { source: "authorsNote" };
   "frontMemory": { source: "frontMemory" };
-  "history": { source: number, entry: HistoryEntry, usedKeys: UsedKeysMap };
+  "history": { source: number, entry: HistoryEntry, usedTopics: UsedTopicsMap };
 }
 
 type AssociationTargets = keyof AssociationParamTypes;
 type AssociationParams = AssociationParamTypes[AssociationTargets];
 type AssociationSources = AssociationParams["source"];
 // There's no reliable way to make TS generate this automatically.
-type FlatAssociationParams = { source: any, entry?: any, usedKeys?: any };
+type FlatAssociationParams = { source: any, entry?: any, usedTopics?: any };
 
 // This should be inlined into `AssociationParamsFor`, but TypeScript's type-system is garbage.
 type AssociationParamsFromTargets<TTargets extends Array<AssociationTargets> | null>
@@ -211,7 +211,7 @@ type ValuationStats = { matched: number, bonus: number, scalar: number };
 /** A generic interface for sortable things. */
 interface SortableEntry {
   text?: string;
-  keys?: Set<string>;
+  topics?: Set<string>;
   relations?: StateEngineData["relations"];
   priority?: StateEngineCacheData["priority"];
   score?: StateEngineCacheData["score"];

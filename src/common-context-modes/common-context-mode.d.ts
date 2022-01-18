@@ -2,7 +2,7 @@ interface CommonModeEntry {
   text: string;
   priority: number | null;
   score: number;
-  keys?: Set<string>;
+  topics?: Set<string>;
   relations?: AnyRelationDef[];
 }
 

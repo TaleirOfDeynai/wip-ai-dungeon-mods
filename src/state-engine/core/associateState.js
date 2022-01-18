@@ -9,13 +9,13 @@ const { associationsHelper, getAssociationSet } = require("./_helpers");
 module.exports = (data) => {
   const { stateEngineContext: ctx } = data;
 
-  /** @type {UsedKeysMap} */
-  const usedKeys = new Map();
+  /** @type {UsedTopicsMap} */
+  const usedTopics = new Map();
 
-  for (const [matcher, params] of associationsHelper(data, usedKeys)) {
+  for (const [matcher, params] of associationsHelper(data, usedTopics)) {
     const result = matcher.stateEntry.associator(matcher, params);
     if (result) getAssociationSet(ctx, params.source, true).add(matcher.entryId);
   }
 
-  //console.log([...usedKeys].map(([key, theSet]) => `${key} uses: ${[...theSet].join(", ")}`));
+  //console.log([...usedTopics].map(([topic, theSet]) => `${topic} uses: ${[...theSet].join(", ")}`));
 };

@@ -70,12 +70,12 @@ exports.parsers = {
     if (!text) return undefined;
     const match = reRelation.exec(text);
     if (!match) return undefined;
-    const [, typePart, key] = match;
+    const [, typePart, topic] = match;
     switch (typePart) {
-      case ":": return { type: "allOf", key };
-      case "?": return { type: "atLeastOne", key };
-      case "@": return { type: "immediate", key };
-      case "!": return { type: "negated", key };
+      case ":": return { type: "allOf", topic };
+      case "?": return { type: "atLeastOne", topic };
+      case "@": return { type: "immediate", topic };
+      case "!": return { type: "negated", topic };
       default: return undefined;
     }
   },
@@ -150,11 +150,11 @@ class StateEngineEntry {
   constructor(config) {
     /** The entry's ID. */
     this.entryId = "";
-    /** @type {Set<string>} All keys assigned to the entry. */
-    this.keys = new Set();
+    /** @type {Set<string>} All topics assigned to the entry. */
+    this.topics = new Set();
     /** @type {AnyKeywordDef[]} The entry's keywords, for text matching. */
     this.keywords = [];
-    /** A helper for checking relations against keys in the `UsedEntryMap`. */
+    /** A helper for checking relations against topics in the `UsedTopicsMap`. */
     this.relator = require("./RelatableEntry").nilRelatableEntry;
     /** @type {Map<AssociationSources, number>} Storage for relations found per source. */
     this.relationCounts = new Map();
@@ -240,7 +240,7 @@ class StateEngineEntry {
   }
 
   /**
-   * The entry's relations to other keys.
+   * The entry's relations to other topics.
    * 
    * Setting this value will automatically update `relator`.
    * 
@@ -292,15 +292,15 @@ class StateEngineEntry {
    * Handles deferred initialization of the class.
    * 
    * @param {string} entryId
-   * @param {string[]} [keys]
+   * @param {string[]} [topics]
    * @param {Object} [matchingOpts]
    * @param {AnyRelationDef[]} [matchingOpts.relations]
    * @param {AnyKeywordDef[]} [matchingOpts.keywords]
    * @returns {this}
    */
-  init(entryId, keys, matchingOpts) {
+  init(entryId, topics, matchingOpts) {
     this.entryId = entryId;
-    this.keys = new Set(keys ?? []);
+    this.topics = new Set(topics ?? []);
     this.relations = matchingOpts?.relations ?? [];
     this.keywords = matchingOpts?.keywords ?? [];
     return this;
@@ -373,7 +373,7 @@ class StateEngineEntry {
     if (!this.checkKeywords(matcher, params)) return false;
     if (!this.checkRelations(matcher, params)) return false;
 
-    this.recordKeyUsage(params);
+    this.recordTopicUsage(params);
     return true;
   }
 
@@ -421,7 +421,7 @@ class StateEngineEntry {
    */
   checkRelations(matcher, params) {
     if (isParamsFor("playerMemory", params)) {
-      // Entries with relations can never match the player memory, as it cannot have keys.
+      // Entries with relations can never match the player memory, as it cannot have topics.
       return !this.hasInclusiveRelations;
     }
 
@@ -431,10 +431,10 @@ class StateEngineEntry {
       // If we matched keywords, but have no relations to test, go ahead and associate.
       if (this.hasInclusiveKeywords && this.relations.length === 0) return true;
 
-      // For implicit references, we'll check the entry's keys to see if the
+      // For implicit references, we'll check the entry's topics to see if the
       // entry can satisfy the needed relations.
       const { entry } = params;
-      const result = this.relator.checkKeys(entry.keys);
+      const result = this.relator.checkTopics(entry.topics);
       // Triggered a negation; no match.
       if (result === false) return false;
       // Avoided a negation, but no inclusive match; no match.
@@ -447,10 +447,10 @@ class StateEngineEntry {
       // No relations to match; default is success.
       if (this.relations.length === 0) return true;
 
-      // For history sources, we'll use the `usedKeys` map to see if other entries
-      // have brought the needed keys into context.
-      const { source, usedKeys } = params;
-      const result = this.relator.check(usedKeys, source);
+      // For history sources, we'll use the `usedTopics` map to see if other entries
+      // have brought the needed topics into context.
+      const { source, usedTopics } = params;
+      const result = this.relator.check(usedTopics, source);
       if (result === false) return false;
       this.relationCounts.set(source, result);
       return true;
@@ -460,20 +460,20 @@ class StateEngineEntry {
   }
 
   /**
-   * Handles the recording of the entry's key in `usedKeys` for history sources.
+   * Handles the recording of the entry's topics in `usedTopics` for history sources.
    * This is safe to call, even if the source is not for the history.
    * 
    * @param {AssociationParamsFor<this>} params 
    * @returns {void}
    */
-  recordKeyUsage(params) {
-    if (this.keys.size === 0) return;
+  recordTopicUsage(params) {
+    if (this.topics.size === 0) return;
     if (!isParamsFor("history", params)) return;
 
-    const { source, usedKeys } = params;
-    const theKeys = usedKeys.get(source) ?? new Set();
-    for (const key of this.keys) theKeys.add(key);
-    usedKeys.set(source, theKeys);
+    const { source, usedTopics } = params;
+    const theTopics = usedTopics.get(source) ?? new Set();
+    for (const topic of this.topics) theTopics.add(topic);
+    usedTopics.set(source, theTopics);
   }
 
   /**
@@ -511,7 +511,7 @@ class StateEngineEntry {
    *   Assumes a 1-to-2 ratio if the entry has no keywords or was associated without
    *   them, effectively penalizing the entry for not being matched through text.
    * - The number of exclusive keywords dodged.
-   * - The number of related keys that had to match for this to match.
+   * - The number of related topics that had to match for this to match.
    * - The number of negated relations dodged.
    * 
    * When overriding, if you only want to provide a boost to the base scalar, simply
@@ -638,9 +638,9 @@ class StateEngineEntry {
    */
   toString(withExcerpt) {
     const { type, entryId, text: entryText } = this;
-    const keys = [...this.keys];
-    if (!withExcerpt) return stateDataString({ type, entryId, keys });
-    return stateDataString({ type, entryId, keys, entryText });
+    const topics = [...this.topics];
+    if (!withExcerpt) return stateDataString({ type, entryId, topics });
+    return stateDataString({ type, entryId, topics, entryText });
   }
 
   /**
@@ -650,10 +650,10 @@ class StateEngineEntry {
    */
   toJSON() {
     const { type, entryId } = this;
-    const keys = [...this.keys];
+    const topics = [...this.topics];
     const relations = [...this.relations];
     const keywords = [...this.keywords];
-    return { type, entryId, keys, relations, keywords };
+    return { type, entryId, topics, relations, keywords };
   }
 }
 

@@ -6,7 +6,7 @@ const { tuple2, chain, toPairs } = require("../../utils");
  */
 const entryForModifier = (entry) => ({
   ...entry.toJSON(),
-  keys: new Set(entry.keys)
+  topics: new Set(entry.topics)
 });
 
 /**

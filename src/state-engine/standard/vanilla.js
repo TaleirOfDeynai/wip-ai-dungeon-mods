@@ -55,7 +55,7 @@ const { EngineEntryForWorldInfo, parsers } = require("../EngineEntryForWorldInfo
         .thru((kvps) => partition(kvps))
         .value((kvps) => fromPairs(kvps));
 
-      return { keys: [], type: "VanillaEntry", relations, keywords };
+      return { topics: [], type: "VanillaEntry", relations, keywords };
     }
   }
 

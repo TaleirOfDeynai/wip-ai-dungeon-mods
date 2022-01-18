@@ -31,58 +31,58 @@ const debugText = ({ text }) => text?.split(" ").slice(0, 10).join(" ") ?? "(no 
  */
 exports.sortingHelpers = (theEntries) => {
   /** @type {Set<string>} */
-  const knownKeys = new Set();
+  const knownTopics = new Set();
   /** @type {Map<string | null, number>} */
-  const keyToPriority = new Map([[null, 0]]);
+  const topicToPriority = new Map([[null, 0]]);
   /** @type {Map<string, Set<SortableEntry>>} */
-  const keyToEntries = new Map();
+  const topicToEntries = new Map();
   /** @type {Map<SortableEntry, Set<string>>} */
   const entryToRelatives = new Map();
 
   // Gather some information about our entries.  In particular:
-  // - All the known keys.
-  // - A complete list of keys an entry is related to.
-  // - A map of keys to priorities.
+  // - All the known topics.
+  // - A complete list of topics an entry is related to.
+  // - A map of topics to priorities.
   // The map will contain the lowest priority from the prioritized entries that all
-  // share a key.
+  // share a topic.
   for (const entry of theEntries) {
-    if (!entry.keys || entry.keys.size === 0) continue;
+    if (!entry.topics || entry.topics.size === 0) continue;
 
     /** @type {Set<string>} */
     const relatives = new Set();
 
-    for (const key of entry.keys) {
-      const setOfEntries = keyToEntries.get(key) ?? new Set();
+    for (const topic of entry.topics) {
+      const setOfEntries = topicToEntries.get(topic) ?? new Set();
       
       setOfEntries.add(entry);
-      relatives.add(key);
-      knownKeys.add(key);
+      relatives.add(topic);
+      knownTopics.add(topic);
 
       if (entry.priority != null) {
-        const curPriority = keyToPriority.get(key);
+        const curPriority = topicToPriority.get(topic);
         if (curPriority == null || entry.priority > curPriority)
-          keyToPriority.set(key, entry.priority);
+          topicToPriority.set(topic, entry.priority);
       }
 
       if (entry.relations != null)
         for (const rel of entry.relations)
           if (rel.type !== "negated")
-            relatives.add(rel.key);
+            relatives.add(rel.topic);
 
       entryToRelatives.set(entry, relatives);
-      keyToEntries.set(key, setOfEntries);
+      topicToEntries.set(topic, setOfEntries);
     }
   }
 
   /**
-   * Determines if two entries share at least one key.
+   * Determines if two entries share at least one topic.
    * 
    * @param {SortableEntry} a 
    * @param {SortableEntry} b 
    */
-  const haveSharedKeys = (a, b) => {
-    if (!a.keys || !b.keys) return false;
-    return setsIntersect(a.keys, b.keys);
+  const haveSharedTopics = (a, b) => {
+    if (!a.topics || !b.topics) return false;
+    return setsIntersect(a.topics, b.topics);
   };
 
   /**
@@ -97,7 +97,7 @@ exports.sortingHelpers = (theEntries) => {
       if (!entry.relations) return [];
       return entry.relations
         .filter((v) => v.type !== "negated")
-        .map((v) => v.key);
+        .map((v) => v.topic);
     };
 
     return memoize(getInclusiveRelations);
@@ -112,7 +112,7 @@ exports.sortingHelpers = (theEntries) => {
      * @returns {string[]}
      */
     const getMatchedRelations = (entry) =>
-      getInclusiveRelations(entry).filter((k) => knownKeys.has(k));
+      getInclusiveRelations(entry).filter((k) => knownTopics.has(k));
 
     return memoize(getMatchedRelations);
   });
@@ -131,11 +131,11 @@ exports.sortingHelpers = (theEntries) => {
     visited.add(entry);
     yield entry;
 
-    const relatedKeys = entryToRelatives.get(entry);
-    if (!relatedKeys) return;
+    const relatedTopics = entryToRelatives.get(entry);
+    if (!relatedTopics) return;
 
-    for (const rel of relatedKeys) {
-      const setOfEntries = keyToEntries.get(rel);
+    for (const rel of relatedTopics) {
+      const setOfEntries = topicToEntries.get(rel);
       if (!setOfEntries) continue;
       for (const relEntry of setOfEntries)
         yield* traverseRelatives(relEntry, visited);
@@ -143,37 +143,37 @@ exports.sortingHelpers = (theEntries) => {
   };
 
   /**
-   * Gets a set of keys that each represent a terminal key in a relation chain.
+   * Gets a set of topics that each represent a terminal topic in a relation chain.
    * The entry itself may be its own terminal.
    * 
    * @type {(entry: SortableEntry) => Set<string>}
    */
-  const getRootKeys = dew(() => {
+  const getRootTopics = dew(() => {
     /**
      * @param {SortableEntry} entry
      * @returns {Iterable<string>}
      */
-    const getRootKeys = function* (entry) {
+    const getRootTopics = function* (entry) {
       // It's possible that the relatives may have been culled during the selection
       // process, so if we hit an entry that has relations, but some of them are not
-      // in the list of known keys, we will count this as terminal.
+      // in the list of known topics, we will count this as terminal.
       for (const relEntry of traverseRelatives(entry)) {
         // This should never happen, but it makes TS happy.
-        if (!relEntry.keys) continue;
+        if (!relEntry.topics) continue;
 
         // Using a rarely used JS feature to keep this simpler: a labeled block.
         theChecks: {
           const inclusiveRelations = getInclusiveRelations(relEntry);
           // If this is not related at all, its terminal.
           if (!inclusiveRelations.length) break theChecks;
-          // If some relation is an unknown key, it's terminal.
+          // If some relation is an unknown topic, it's terminal.
           const matchedRelations = getMatchedRelations(relEntry);
           if (matchedRelations.length < inclusiveRelations.length) break theChecks;
           // If no other relation exists that has no tie to `entry` or `relEntry`, it's terminal.
           const culledRelations = matchedRelations.filter((k) => {
-            const selfHas = Boolean(entry.keys?.has(k));
+            const selfHas = Boolean(entry.topics?.has(k));
             if (entry === relEntry) return selfHas;
-            return selfHas && Boolean(relEntry.keys?.has(k));
+            return selfHas && Boolean(relEntry.topics?.has(k));
           });
           if (culledRelations.length === 0) break theChecks;
           // Otherwise, it is not terminal.
@@ -181,48 +181,48 @@ exports.sortingHelpers = (theEntries) => {
         }
 
         // If we break out of `theChecks`, we have a terminal entry.
-        yield* relEntry.keys;
+        yield* relEntry.topics;
       }
     };
 
-    return memoize((entry) => new Set(getRootKeys(entry)));
+    return memoize((entry) => new Set(getRootTopics(entry)));
   });
 
   /**
    * Obtains the priority for a given entry.  Entries that are unprioritized but share
-   * a key or have a sole relation with some prioritized entry will have the lowest
-   * priority of the entries with that key.
+   * a topic or have a sole relation with some prioritized entry will have the lowest
+   * priority of the entries with that topic.
    * 
    * @param {SortableEntry} entry
    * @returns {string | null}
    */
-  const getPriorityKey = (entry) => {
-    if (entry.keys)
-      for (const key of entry.keys)
-        if (keyToPriority.has(key)) return key;
+  const getPriorityTopic = (entry) => {
+    if (entry.topics)
+      for (const topic of entry.topics)
+        if (topicToPriority.has(topic)) return topic;
 
     // If this entry is normally associated with multiple relations, but only one
     // of those relations was actually selected, we'll group them up.
     const matchedRelations = getMatchedRelations(entry);
     if (matchedRelations.length === 1) {
-      const [theKey] = matchedRelations;
-      if (keyToPriority.has(theKey)) return theKey;
+      const [theTopic] = matchedRelations;
+      if (topicToPriority.has(theTopic)) return theTopic;
     }
     return null;
   };
 
   /**
    * Obtains the priority for a given entry.  Entries that are unprioritized but share
-   * a key or have a sole relation with some prioritized entry will have the lowest
-   * priority of the entries with that key.
+   * a topic or have a sole relation with some prioritized entry will have the lowest
+   * priority of the entries with that topic.
    * 
    * @param {SortableEntry} entry
-   * @param {string | null} keyAs
+   * @param {string | null} topicAs
    * @returns {number}
    */
-  const getPriorityFor = (entry, keyAs) => {
+  const getPriorityFor = (entry, topicAs) => {
     if (entry.priority != null) return entry.priority;
-    return keyToPriority.get(keyAs) ?? 0;
+    return topicToPriority.get(topicAs) ?? 0;
   };
 
   /**
@@ -233,7 +233,7 @@ exports.sortingHelpers = (theEntries) => {
   const isDirectlyRelated = dew(() => {
     // @ts-ignore - Going without types here.
     const _impl = memoize((a) => memoize((b) => {
-      return Boolean(b.key && getMatchedRelations(a).includes(b.key));
+      return Boolean(b.topic && getMatchedRelations(a).includes(b.topic));
     }));
     return (a, b) => _impl(a)(b);
   });
@@ -261,14 +261,14 @@ exports.sortingHelpers = (theEntries) => {
    * @returns {boolean}
    */
   const isDescendent = (entry, maybeRelated) => {
-    // If two entries share a key, they can't be descendents.
-    if (haveSharedKeys(entry, maybeRelated)) return false;
+    // If two entries share a topic, they can't be descendants.
+    if (haveSharedTopics(entry, maybeRelated)) return false;
     return isIndirectlyRelated(entry, maybeRelated);
   };
 
   /**
    * Determines if an entry is a member of another's family.  In other words,
-   * they either share a key or are related by a key.
+   * they either share a topic or are related by a topic.
    * 
    * This is a fast-path for `isIndirectlyRelated`.
    * 
@@ -277,16 +277,16 @@ exports.sortingHelpers = (theEntries) => {
    * @returns {boolean}
    */
   const isFamily = (entry, maybeFamily) => {
-    if (haveSharedKeys(entry, maybeFamily)) return true;
+    if (haveSharedTopics(entry, maybeFamily)) return true;
     return isIndirectlyRelated(entry, maybeFamily);
   };
 
   return {
-    haveSharedKeys,
+    haveSharedTopics,
     getMatchedRelations,
     traverseRelatives,
-    getRootKeys,
-    getPriorityKey,
+    getRootTopics,
+    getPriorityTopic,
     getPriorityFor,
     isDirectlyRelated,
     isIndirectlyRelated,
@@ -302,7 +302,7 @@ exports.sortingHelpers = (theEntries) => {
 exports.buildSorter = (helpers) => {
   /**
    * Sorts:
-   * - Entries that share keys or are solely related are positioned:
+   * - Entries that share topics or are solely related are positioned:
    *   - With unprioritized entries after prioritized entries.
    *   - In descending priority order, otherwise.
    * - Otherwise, by the priority from `getPriorityFor`, descending.
@@ -310,19 +310,19 @@ exports.buildSorter = (helpers) => {
    * @type {SortingFn}
    */
    const sortPriority = (a, b) => {
-    const aKey = helpers.getPriorityKey(a);
-    const bKey = helpers.getPriorityKey(b);
+    const aTopic = helpers.getPriorityTopic(a);
+    const bTopic = helpers.getPriorityTopic(b);
 
     // If the two entries have a commonality and one has a priority while the other doesn't,
     // we always sort the one that doesn't afterwards.
-    if (aKey != null && aKey === bKey) {
+    if (aTopic != null && aTopic === bTopic) {
       if (a.priority != null && b.priority == null) return -1;
       if (b.priority != null && a.priority == null) return 1;
     }
 
     // Otherwise, sort according to the obtained priorities.
-    const aPriority = helpers.getPriorityFor(a, aKey);
-    const bPriority = helpers.getPriorityFor(b, bKey);
+    const aPriority = helpers.getPriorityFor(a, aTopic);
+    const bPriority = helpers.getPriorityFor(b, bTopic);
     return bPriority - aPriority;
   };
 
@@ -350,14 +350,14 @@ exports.buildSorter = (helpers) => {
 
   /**
    * Sorts:
-   * - Scores of entries that share keys in ascending order.
+   * - Scores of entries that share topics in ascending order.
    * - In descending order, otherwise.
    * 
    * @type {SortingFn}
    */
   const sortScore = (a, b) => {
     const [lScore = 0, rScore = 0]
-      = helpers.haveSharedKeys(a, b) ? [a.score, b.score]
+      = helpers.haveSharedTopics(a, b) ? [a.score, b.score]
       : [b.score, a.score];
     return lScore > rScore ? 1 : 0;
   };
@@ -392,17 +392,17 @@ exports.buildSorter = (helpers) => {
  */
 exports.buildGrouper = (orderedEntries, helpers) => {
   /** @type {Map<string, number>} */
-  const firstKeys = new Map();
+  const firstTopics = new Map();
   /** @type {Map<SortableEntry, number>} */
   const entryToPosition = new Map();
 
   for (let i = 0, lim = orderedEntries.length; i < lim; i++) {
     const entry = orderedEntries[i];
     entryToPosition.set(entry, i);
-    if (!entry.keys) continue;
-    for (const key of entry.keys) {
-      if (firstKeys.has(key)) continue;
-      firstKeys.set(key, i);
+    if (!entry.topics) continue;
+    for (const topic of entry.topics) {
+      if (firstTopics.has(topic)) continue;
+      firstTopics.set(topic, i);
     }
   }
 
@@ -414,8 +414,8 @@ exports.buildGrouper = (orderedEntries, helpers) => {
    * @returns {number}
    */
   const getSorting = (entry) => {
-    const positions = chain(helpers.getRootKeys(entry))
-      .map((rootKey) => firstKeys.get(rootKey))
+    const positions = chain(helpers.getRootTopics(entry))
+      .map((rootTopic) => firstTopics.get(rootTopic))
       .filter(isInstance)
       .toArray();
     if (positions.length > 0) return Math.max(...positions);
@@ -424,9 +424,9 @@ exports.buildGrouper = (orderedEntries, helpers) => {
   }
 
   return (a, b) => {
-    // Entries with a priority are breakpoints.  No crossing this boundry.
+    // Entries with a priority are breakpoints.  No crossing this boundary.
     if (a.priority != null || b.priority != null) return 0;
-    // Otherwise, locate the the position of the earliest root key for each.
+    // Otherwise, locate the the position of the earliest root topic for each.
     const aPos = getSorting(a);
     const bPos = getSorting(b);
     // And shuffle them closer to their roots, as needed.

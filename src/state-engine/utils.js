@@ -66,16 +66,16 @@ exports.worldInfoString = (worldInfo, withExcerpt = false) => {
  * @param {string} parts.type
  * @param {string} parts.entryId
  * @param {string} [parts.infoName]
- * @param {string[]} [parts.keys]
+ * @param {string[]} [parts.topics]
  * @param {string} [parts.entryText]
  * @returns {string}
  */
 exports.stateDataString = (parts) => {
-  const { type, keys, entryId, infoName, entryText } = parts;
-  const keysPart = keys?.filter(Boolean).join(" & ");
+  const { type, topics, entryId, infoName, entryText } = parts;
+  const topicsPart = topics?.filter(Boolean).join(" & ");
   const typePart
     = infoName ? infoName
-    : keysPart ? `$${type}[${keysPart}]`
+    : topicsPart ? `$${type}[${topicsPart}]`
     : `$${type}`;
 
   const result = `StateEntry#${entryId}<${typePart}>`;

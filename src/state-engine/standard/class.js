@@ -13,7 +13,7 @@ const { EngineEntryForWorldInfo } = require("../EngineEntryForWorldInfo");
  const init = () => {
   /**
    * A state entry to assist in creating classifications of things.  You can provide
-   * a list of matchers and then relate other entries to this entry's key in order
+   * a list of matchers and then relate other entries to this entry's topic in order
    * to share keywords or relations.
    * 
    * The text of this entry is not used and it will only search relations for the
@@ -25,8 +25,8 @@ const { EngineEntryForWorldInfo } = require("../EngineEntryForWorldInfo");
 
     validator() {
       const issues = super.validator();
-      if (this.keys.size !== 1)
-        issues.push(`World info entry \`${this.infoKey}\` must have exactly one tag.`);
+      if (this.topics.size !== 1)
+        issues.push(`World info entry \`${this.infoKey}\` must have exactly one topic.`);
       if (!this.hasMatchers)
         issues.push(`World info entry \`${this.infoKey}\` requires at least one matcher.`);
       return issues;
@@ -42,10 +42,10 @@ const { EngineEntryForWorldInfo } = require("../EngineEntryForWorldInfo");
      */
      checkRelations(matcher, params) {
       if (!isParamsFor("history", params)) return false;
-      const { source, usedKeys } = params;
+      const { source, usedTopics } = params;
 
       if (this.relations.length === 0) return true;
-      const result = this.relator.check(usedKeys, source, source);
+      const result = this.relator.check(usedTopics, source, source);
       return result !== false;
     }
 

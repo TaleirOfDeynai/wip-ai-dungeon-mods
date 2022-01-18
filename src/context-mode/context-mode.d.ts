@@ -8,8 +8,8 @@ interface ContextModeModule {
 interface ContextData extends StateEngineData, StateEngineCacheData {
   /** The entry's text. */
   text: string;
-  /** The entry's keys. */
-  keys: Set<string>;
+  /** The entry's topics. */
+  topics: Set<string>;
 }
 
 interface HistoryData {

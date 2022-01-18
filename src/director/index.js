@@ -43,8 +43,8 @@ const init = (data) => {
 
     validator() {
       const issues = super.validator();
-      if (this.keys.size > 1)
-        issues.push(`World info entry \`${this.infoKey}\` can have, at most, one tag.`);
+      if (this.topics.size > 1)
+        issues.push(`World info entry \`${this.infoKey}\` can have, at most, one topic.`);
       return issues;
     }
 
@@ -53,15 +53,15 @@ const init = (data) => {
      * @returns {void}
      */
     modifier(allStates) {
-      // If we have a single key and no relations, and some entry exists that shares
-      // the key, use the key as a relation implicitly.
-      if (this.keys.size !== 1 || this.relations.length > 0) return;
-      const [mainKey] = this.keys;
+      // If we have a single topic and no relations, and some entry exists that shares
+      // the topic, use the topic as a relation implicitly.
+      if (this.topics.size !== 1 || this.relations.length > 0) return;
+      const [mainTopic] = this.topics;
       for (const [, entry] of allStates) {
         if (entry.type === this.type) continue;
-        if (!entry.keys.has(mainKey)) continue;
+        if (!entry.topics.has(mainTopic)) continue;
         /** @type {RelationDef<"allOf">} */
-        const newRel = { type: "allOf", key: mainKey };
+        const newRel = { type: "allOf", topic: mainTopic };
         this.relations = [...this.relations, newRel];
         return;
       }
@@ -84,11 +84,11 @@ const init = (data) => {
         if (!this.checkKeywords(matcher, params)) return false;
         if (!this.checkRelations(matcher, params)) return false;
         this.historyMatches += 1;
-        this.recordKeyUsage(params);
+        this.recordTopicUsage(params);
       }
       else if(data.state.$$currentDirectorSelection === this.entryId) {
-        // Always bring the key into context if it is the current entry.
-        this.recordKeyUsage(params);
+        // Always bring the topic into context if it is the current entry.
+        this.recordTopicUsage(params);
       }
 
       // We're not associating with history entries, just matching against them.

@@ -22,10 +22,10 @@ exports.getAssociationSet = dew(() => {
 
 /**
  * @param {import("aid-bundler/src/aidData").AIDData} data
- * @param {UsedKeysMap} [usedKeys]
+ * @param {UsedTopicsMap} [usedTopics]
  * @returns {Iterable<[MatchableEntry, FlatAssociationParams]>}
  */
-exports.associationsHelper = function* (data, usedKeys) {
+exports.associationsHelper = function* (data, usedTopics) {
   const ctx = data.stateEngineContext;
   const { playerMemory, state } = data;
   const { memory: { frontMemory }, $$setAuthorsNote } = state;
@@ -58,7 +58,7 @@ exports.associationsHelper = function* (data, usedKeys) {
     const offset = ctx.workingHistory.length - 1 - index;
     for (const matcher of ctx.sortedStateMatchers)
       if (matcher.targetSources.has("history"))
-        yield [matcher, { source: offset, entry: historyEntry, usedKeys }];
+        yield [matcher, { source: offset, entry: historyEntry, usedTopics }];
   }
 };
 

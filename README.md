@@ -23,11 +23,6 @@ Now you have produced your own build.  If you didn't, then...  *shrugs*  Figure 
 
 ## Rushed Guide (with examples)
 
-### Oddities
-The code calls the identifiers in State-Engine entries `keys`, but I'll be referring to them as "tags" here, so they're less likely to be confused with "keyword".
-
-I intended to refactor this in code, but whatever.
-
 ### Vanilla World-Info Support
 This script should work with vanilla entries out-of-the-box.  They can also use the new matcher features for both keywords and relations.
 
@@ -36,23 +31,23 @@ Example:
 > Captain Boris is a male human who commands Lelindar's city guard.
 
 ### Anatomy of a State-Engine Entry
-A typed State-Engine entry is required to introduce tags for the relation matchers.
+A typed State-Engine entry is required to introduce topics for the relation matchers.
 
 `$Player[Taleir & Fox & Female](adventurer; rogue)`
 
-There are three parts to a typed entry, the "type", the "tags" and the "matchers".
+There are three parts to a typed entry, the "type", the "topics" and the "matchers".
 
 In this example:
 * The `$Player` portion identifies the type of entry, a "Player" entry.  These are case-sensitive.
-* The `[Taleir & Fox & Female]` portion are the tags, separated by `&`.
+* The `[Taleir & Fox & Female]` portion are the topics, separated by `&`.
   * May contain spaces and are case-sensitive.
-  * It is generally a good idea to capitalize the first letter to make it more obvious its a tag.
-  * Tags can be thought of bringing a named concept into context.
+  * It is generally a good idea to capitalize the first letter to make it more obvious its a topic.
+  * Topics can be thought of bringing a named concept into context.
     * In the example, if this entry were associated with any text, the concepts of the character Taleir, the vulpine race, and the female sex would be brought into context.
-    * If another entry wants to provide more information about something in context, it would use a relation to match the tag(s) identifying those concepts, IE: `(:Fox; :Female)` would attempt to match female foxes.
+    * If another entry wants to provide more information about something in context, it would use a relation to match the topic(s) identifying those concepts, IE: `(:Fox; :Female)` would attempt to match female foxes.
 * The `(adventurer; rogue)` portion are the matchers, two keywords in this case.
-  * Keywords are not case-sensitive but tags used by relations are.
-  * It is a good practice to keep keywords in all-lowercase to differentiate them from tags in relations.
+  * Keywords are not case-sensitive but topics used by relations are.
+  * It is a good practice to keep keywords in all-lowercase to differentiate them from topics in relations.
 
 Matchers are separated by a semi-colon (`;`), **NOT** a comma (`,`).  This is intended to save time when AI Dungeon's vanilla world-info matcher tries to match world-info to text, since State-Engine will be redoing all its work, anyways.
 
@@ -66,7 +61,7 @@ Some entries may associate with multiple sources or just peek at them for inform
 Only these are currently in use:
 * Implicit association (referred to as `"implicit"` in the code) allows only one entry of each type.  For example, if multiple `$Scene` entries are provided which can only associate implicitly, only **one** of those entries will be included in the context.
 * Action association (referred to as `"history"` or just a `number` in the code) allows any entry to associate if it matches the action's text.  Multiple entries can create an association, but a roulette based on how well they matched the text is run to select only **one** entry per action.
-  * Actions are processed from oldest to latest actions.  This means that tags brought into context in a later action will not be available to entries that are looking for that tag from an earlier action.
+  * Actions are processed from oldest to latest actions.  This means that topics brought into context in a later action will not be available to entries that are looking for that topic from an earlier action.
 * Author's Note association (referred to as `"authorsNote"` in the code) will inject the entry's text as the Author's Note when it is selected.
   * This is used by the `$Direction` entry to do its work.
 
@@ -88,22 +83,22 @@ Currently un-used association types, for those curious:
 * `-"<term>"` - Exclusive exact-match keywords.  Yes, you can combine them!
 
 #### Relations
-* `:<tag>` - The All-Of relation.  All tags with `:` must be in context.
-* `?<tag>` - The Any-Of relation.  At least one tag with `?` must be in context.
-  * Only useful if multiple tags share this relation type, IE: `(?Taleir; ?Riff)` wants at least one of these two tags.
-  * If it manages to get both tags into context, its score will be increased.
-* `@<tag>` - The Immediate relation.  The tag must be associated with the current action.  It is not allowed to search previous actions for the tag.
-* `!<tag>` - The Negated relation.  The tag cannot be in context.
+* `:<topic>` - The All-Of relation.  All topics with `:` must be in context.
+* `?<topic>` - The Any-Of relation.  At least one topic with `?` must be in context.
+  * Only useful if multiple topics share this relation type, IE: `(?Taleir; ?Riff)` wants at least one of these two topics.
+  * If it manages to get both topics into context, its score will be increased.
+* `@<topic>` - The Immediate relation.  The topic must be associated with the current action.  It is not allowed to search previous actions for the topic.
+* `!<topic>` - The Negated relation.  The topic cannot be in context.
 
 ### The `$Player` Entry
 Use this to provide information about the player's character.  It has a very high selection bias, so it is likely to be provided to the AI on almost every action.
 
 It has the following rules:
-* It requires at least one tag.
+* It requires at least one topic.
 * It supports keyword matchers.
 * It does not support relation matchers.
-* The first tag in the list will also be used as a keyword automatically, so you can get away with only `$Player[Taleir & Fox]` and it will automatically infer an exact-match keyword of `"taleir"`.
-  * If the first tag has multiple words, like in `$Player[Jade Curtiss]`, the keyword will use the full name, basically being treated as, `$Player[Jade Curtiss]("jade curtiss")`.
+* The first topic in the list will also be used as a keyword automatically, so you can get away with only `$Player[Taleir & Fox]` and it will automatically infer an exact-match keyword of `"taleir"`.
+  * If the first topic has multiple words, like in `$Player[Jade Curtiss]`, the keyword will use the full name, basically being treated as, `$Player[Jade Curtiss]("jade curtiss")`.
   * In this case, you may want to add additional keywords for the character's individual names: `$Player[Jade Curtiss]("Jade"; "Curtiss")`
 * Supports multi-player.  Multi-player mode is enabled if there is more than one named player.
   * Multi-player mode causes `$Player` entries to need to be associated with action text in order to be included.
@@ -117,11 +112,11 @@ Example:
 Use this to provide information about non-player characters.
 
 It has the following rules:
-* It requires at least one tag.
+* It requires at least one topic.
 * It supports keyword matchers.
 * It does not support relation matchers.
-* The first tag in the list will also be used as a keyword automatically, so you can get away with only `$NPC[Riff & Otter]` and it will automatically infer an exact-match keyword of `"riff"`.
-  * See the `$Player` entry's rules for a little more information on how multi-word tags are handled; they work the same way here.
+* The first topic in the list will also be used as a keyword automatically, so you can get away with only `$NPC[Riff & Otter]` and it will automatically infer an exact-match keyword of `"riff"`.
+  * See the `$Player` entry's rules for a little more information on how multi-word topics are handled; they work the same way here.
 * Each entry has a 1-in-20 chance of being included implicitly to remind the AI of their existence.  If multiple entries are selected in this way, only one will be included implicitly.
 * However, they can still also match through action text.
 
@@ -133,10 +128,10 @@ Example:
 Use this to provide information on locations within your world.
 
 It has the following rules:
-* It requires at least one tag.
+* It requires at least one topic.
 * It supports matchers of any type.
-* The first tag in the list will also be used as a keyword automatically, so you can get away with only `$Location[Lelindar]` and it will automatically infer an exact-match keyword of `"lelindar"`.
-  * See the `$Player` entry's rules for a little more information on how multi-word tags are handled; they work the same way here.
+* The first topic in the list will also be used as a keyword automatically, so you can get away with only `$Location[Lelindar]` and it will automatically infer an exact-match keyword of `"lelindar"`.
+  * See the `$Player` entry's rules for a little more information on how multi-word topics are handled; they work the same way here.
 * Each entry has a 1-in-20 chance of being included implicitly to remind the AI of their existence.  If multiple entries are selected in this way, only one will be included implicitly.
 * However, they can still also match through action text.
 
@@ -159,7 +154,7 @@ Good usages include:
 
 It has the following rules:
 * Always implicitly associated; only one `$Scene` entry will be selected for the context.
-* Does not support tags.
+* Does not support topics.
 * Does not support matchers of any sort.
 
 Examples:
@@ -181,14 +176,14 @@ Good usages include:
 
 It has the following rules:
 * Associates with action text and with player memory.
-* Supports zero or more tags.
+* Supports zero or more topics.
 * Supports zero or more matchers of any type.
   * It has a special ability regarding matchers.  See below.
 * If the entry has no inclusive keywords, it compares the entry's text with the action's text to determine a score.  The more words the two have in common and the less common those words are in _all_ the text available for analysis, the higher the score will be.
 * Receives a score boost if the `$Lore` entry is related to a _later_ `$State` entry.
   * This increases the chances that this entry can add more context to the related `$State` entry.
 
-This entry has a special ability when making a lot of `$Lore` entries for the same concept.  A `$Lore` entry that has no _inclusive_ matchers (it can have exclusive/negated matchers) will attempt to locate another `$Lore` entry with all the same keys that it has that _does_ have inclusive matchers.
+This entry has a special ability when making a lot of `$Lore` entries for the same concept.  A `$Lore` entry that has no _inclusive_ matchers (it can have exclusive/negated matchers) will attempt to locate another `$Lore` entry with all the same topics that it has that _does_ have inclusive matchers.
 
 If it manages to find one, **and only one**, such entry, it will duplicate those matchers to itself.
 
@@ -205,7 +200,7 @@ _Embellishing the race with matcher duplication.  It will get the keywords from 
 > **`$Lore[Fox & BeastFolk]`**
 > Foxes have fur of earthy tones, often with white fur on their stomach.
 
-_You can still use relations with no tag, as well._
+_You can still use relations with no topic, as well._
 > **`$Lore(:Fox; :Lelindar)`**
 > The population of foxes in Lelindar is rather limited, as foxes are not normally attracted to city life.
 
@@ -220,11 +215,11 @@ Good usages include:
   * For instance, my test scenario started you in a city, but the scenario was intended to get you spelunking in some tunnels to battle the big-bad.  `$State` entries that detect when the city is mentioned sprinkled information about the tunnels so the AI would gravitate in that direction.
 
 It has the following rules:
-* Can have at most one tag.
+* Can have at most one topic.
 * Requires at least one matcher of any type.
 * Only **two** of these entries can be selected at a time, favoring entries associated closest to the most recent actions.
   * This is to help keep `$State` entries from dominating the context, as they have _very_ heavy selection weighting.
-* When matching an action, it only searches the previous two actions for related tags, meaning the mention must be very close in context to be associated.
+* When matching an action, it only searches the previous two actions for related topics, meaning the mention must be very close in context to be associated.
 
 Examples:
 _Informing the AI about a character's state._
@@ -249,9 +244,9 @@ Good usages include:
 * And of course, trying to get the AI to be biased toward a writing style.
 
 It has the following rules:
-* Can have at most one tag.
+* Can have at most one topic.
 * Can have zero or more matchers of any type.
-  * If the entry was given a tag, it has no relation matchers, and an entry of another type shares that tag, the entry will be implicitly related to that tag.
+  * If the entry was given a topic, it has no relation matchers, and an entry of another type shares that topic, the entry will be implicitly related to that topic.
   * If the entry has no matchers, it will still associate with a low chance of selection.
 * Checks only the latest 5 actions for matches.
 * If selected, the entry's text will be used as the Author's Note for the next 12 turns, giving the AI time to act upon it before it changes again.
@@ -265,7 +260,7 @@ _Baiting a scene._
 > **`$Direction(?RatGang; ?Guard)`**
 > The sounds of rowdy individuals can be heard nearby.
 
-_Trying to bring another character into play.  The tag will bring their entries into context._
+_Trying to bring another character into play.  The topic will bring their entries into context._
 > **`$Direction[Riff](:Taleir; :Lelindar; !Riff)`**
 > Introduce Riff, an otter jeweler, into this scene.
 
@@ -275,12 +270,12 @@ This entry type does not provide its text to the context.  It's instead intended
 You do need to provide text for the entry, though, or else AI Dungeon will discard the entry.  Or at least, it used to before the World-Info library was introduced.  Who knows what it will do now!
 
 It has the following rules:
-* Must have exactly one tag.
+* Must have exactly one topic.
 * It must have at least one matcher of any type.
-* Relations will only match if its related tags are associated with the _current_ action being matched.
-  * It will not look at past actions for related tags, even if you are not using an Immediate relation.
+* Relations will only match if its related topics are associated with the _current_ action being matched.
+  * It will not look at past actions for related topics, even if you are not using an Immediate relation.
 * Its text will not be used in the context.
-  * It is used only to generate a tag for other entries to relate to.
+  * It is used only to generate a topic for other entries to relate to.
 
 Examples:
 _Creating a classification for a gender._
@@ -302,7 +297,7 @@ _Using the class to match a female for a character quirk._
 ### Tips and Tricks
 
 * Keep your world-info entries short.  Break longer entries apart into multiple entries if possible and rely on State-Engine to pick the most relevant information for the story.
-* `$Lore` entries will have a hard time relating to unique tags from `$State` entries, since they tend to match so close to the latest action, where there may not be enough entries remaining to reliably associate.
+* `$Lore` entries will have a hard time relating to unique topics from `$State` entries, since they tend to match so close to the latest action, where there may not be enough entries remaining to reliably associate.
 * If playing in second-person mode, you may want to setup your Player entry like this: `$Player[Taleir](you)`
 
 ## Context-Mode

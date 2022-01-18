@@ -40,17 +40,17 @@ const init = (data) => {
   const { info } = data;
 
   /**
-   * We implicitly include the first string in `keys` for `Player` and `NPC` as a keyword.
+   * We implicitly include the first string in `topics` for `Player` and `NPC` as a keyword.
    * 
    * @param {StateEngineEntry} entry 
    * @returns {void}
    */
-  const addKeyAsKeyword = (entry) => {
-    const [mainKey] = entry.keys;
-    if (!mainKey) return;
-    const hasMainKey = entry.keywords.some((kw) => kw.type === "include" && kw.value === mainKey);
-    if (hasMainKey) return;
-    entry.keywords.push({ type: "include", exactMatch: true, value: mainKey });
+  const addTopicAsKeyword = (entry) => {
+    const [mainTopic] = entry.topics;
+    if (!mainTopic) return;
+    const hasMainTopic = entry.keywords.some((kw) => kw.type === "include" && kw.value === mainTopic);
+    if (hasMainTopic) return;
+    entry.keywords.push({ type: "include", exactMatch: true, value: mainTopic });
   };
 
   class PlayerEntry extends EngineEntryForWorldInfo {
@@ -66,8 +66,8 @@ const init = (data) => {
 
     validator() {
       const issues = super.validator();
-      if (!this.keys.size)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one tag.`);
+      if (!this.topics.size)
+        issues.push(`World info entry \`${this.infoKey}\` must have at least one topic.`);
       if (this.relations.length)
         issues.push(`World info entry \`${this.infoKey}\` cannot have relation matchers.`);
       return issues;
@@ -75,7 +75,7 @@ const init = (data) => {
 
     modifier() {
       // Add the character's name as a keyword.
-      addKeyAsKeyword(this);
+      addTopicAsKeyword(this);
     }
 
     /**
@@ -133,8 +133,8 @@ const init = (data) => {
 
     validator() {
       const issues = super.validator();
-      if (!this.keys.size)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one tag.`);
+      if (!this.topics.size)
+        issues.push(`World info entry \`${this.infoKey}\` must have at least one topic.`);
       if (this.relations.length)
         issues.push(`World info entry \`${this.infoKey}\` cannot have relation matchers.`);
       return issues;
@@ -142,7 +142,7 @@ const init = (data) => {
 
     modifier() {
       // Add the character's name as a keyword.
-      addKeyAsKeyword(this);
+      addTopicAsKeyword(this);
     }
 
     /**
@@ -182,14 +182,14 @@ const init = (data) => {
 
     validator() {
       const issues = super.validator();
-      if (!this.keys.size)
-        issues.push(`World info entry \`${this.infoKey}\` must have at least one tag.`);
+      if (!this.topics.size)
+        issues.push(`World info entry \`${this.infoKey}\` must have at least one topic.`);
       return issues;
     }
 
     modifier() {
       // Add the location's name as a keyword.
-      addKeyAsKeyword(this);
+      addTopicAsKeyword(this);
     }
 
     /**
@@ -229,8 +229,8 @@ const init = (data) => {
 
     validator() {
       const issues = super.validator();
-      if (this.keys.size)
-        issues.push(`World info entry \`${this.infoKey}\` cannot be given a tag.`);
+      if (this.topics.size)
+        issues.push(`World info entry \`${this.infoKey}\` cannot be given a topic.`);
       if (this.relations.length || this.keywords.length)
         issues.push(`World info entry \`${this.infoKey}\` cannot have any matchers.`);
       return issues;
@@ -264,7 +264,7 @@ const init = (data) => {
 
     /**
      * Copies the matchers from another `Lore` entry when this entry lacks positive
-     * matchers and it shares all the same keys with exactly one other lore entry that
+     * matchers and it shares all the same topics with exactly one other lore entry that
      * only has positive matchers.
      * 
      * Negative matchers are not considered for this entry, allowing you to exclude
@@ -277,20 +277,20 @@ const init = (data) => {
      * @returns {void}
      */
     modifier(allStates) {
-      if (this.keys.size === 0) return;
+      if (this.topics.size === 0) return;
       if (this.hasInclusiveMatchers) return;
 
-      // If a `Lore` has the same `keys` as another entry of the same type,
+      // If a `Lore` has the same `topics` as another entry of the same type,
       // and this entry lacks inclusive matchers, but the other does not, we'll
       // copy those matchers to this entry.
       const duplicateEntries = chain(allStates.values())
         .filter((sd) => {
           // Must be the same type.
           if (sd.type !== this.type) return false;
-          // Must also have keys defined.
-          if (sd.keys.size === 0) return false;
-          // Must have the same keys.
-          if (!setsEqual(sd.keys, this.keys)) return false;
+          // Must also have topics defined.
+          if (sd.topics.size === 0) return false;
+          // Must have the same topics.
+          if (!setsEqual(sd.topics, this.topics)) return false;
           // Cannot have any negative matchers of any kind.
           if (sd.keywords.some(isExclusiveKeyword)) return false;
           if (sd.relations.some(isNegatedRelation)) return false;
@@ -325,13 +325,13 @@ const init = (data) => {
      checkRelations(matcher, params) {
       if (this.hasInclusiveKeywords) return super.checkRelations(matcher, params);
       if (!isParamsFor("history", params)) return false;
-      const { source, usedKeys } = params;
+      const { source, usedTopics } = params;
 
       // For naked `$Lore` entries, totally lacking matchers, we'll just throw them in.
       if (this.relations.length === 0) return true;
 
       // Otherwise, limit the search for relations.
-      const result = this.relator.check(usedKeys, source, source + 1);
+      const result = this.relator.check(usedTopics, source, source + 1);
       if (result === false) return false;
       this.relationCounts.set(source, result);
       return true;
@@ -347,14 +347,14 @@ const init = (data) => {
      * @returns {boolean}
      */
     preRules(matcher, source, neighbors) {
-      const { keys } = this;
-      if (keys.size === 0) return true;
+      const { topics } = this;
+      if (topics.size === 0) return true;
 
       // Later states only, because we don't want this lore entry over
       // shadowing the more important state entry.
       for (const [otherEntry] of neighbors.after()) {
         if (otherEntry.type !== "State") continue;
-        if (!otherEntry.relator.isMemberOf(keys)) continue;
+        if (!otherEntry.relator.isMemberOf(topics)) continue;
         this.hasMatchedStateMap.set(source, true);
         break;
       }
@@ -382,8 +382,8 @@ const init = (data) => {
 
     validator() {
       const issues = super.validator();
-      if (this.keys.size > 1)
-        issues.push(`World info entry \`${this.infoKey}\` cannot have more than one tag.`);
+      if (this.topics.size > 1)
+        issues.push(`World info entry \`${this.infoKey}\` cannot have more than one topic.`);
       if (this.keywords.length === 0 && this.relations.length === 0)
         issues.push(`World info entry \`${this.infoKey}\` must have at least one matcher.`);
       return issues;
@@ -402,10 +402,10 @@ const init = (data) => {
      */
     checkRelations(matcher, params) {
       if (!isParamsFor("history", params)) return false;
-      const { source, usedKeys } = params;
+      const { source, usedTopics } = params;
 
       if (this.relations.length === 0) return true;
-      const result = this.relator.check(usedKeys, source, source + 2);
+      const result = this.relator.check(usedTopics, source, source + 2);
       if (result === false) return false;
       this.relationCounts.set(source, result);
       return true;
