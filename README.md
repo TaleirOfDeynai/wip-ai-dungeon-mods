@@ -551,20 +551,6 @@ Commands:
 * `/with memory report summary` displays the current summary as a message.
 * `/with-memory reset` clears With-Memory's managed caches.
 
-### World-Control
-Provides command for working with world-info.  Primarily, I used it to show and hide entries for debugging.
-
-_Due to Latitude incompetence, commands that show and hide entries are likely broken until they finally fix the World-Info scripting API._
-
-Commands:
-* `/world-control show` reveals world-info that were hidden by the scenario when the adventure first began.
-* `/world-control hide` does the inverse of `show`, re-hiding any entries that were revealed.  It will leave entries that did not exist when the scenario started alone, however.
-* `/world-control show index <n>` forcefully shows the World-Info at `worldEntries[n]`.
-* `/world-control hide index <n>` is the opposite of `show index <n>`.
-* `/world-control report <n>` dumps the world-info at `worldEntries[n]` to console.
-* `/world-control rebuild` rebuilds its internal cache of hidden scenarios based on the current state of all entries in the `worldEntries` array.  So, if you `show` and then `rebuild` you can't `hide` anymore.
-* `/world-control reset` just wipes its internal cache.  This will force it to `rebuild` when the input modifier next executes.
-
 ### Turn-Cache
 A utility module that provides per-action caching capabilities.
 

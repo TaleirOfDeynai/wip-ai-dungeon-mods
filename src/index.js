@@ -3,7 +3,6 @@ const { SimpleCommand } = require("./commands");
 const { shutUpTS } = require("./utils");
 const withMemory = require("./with-memory");
 const configCommander = require("./config-commander");
-const worldControl = require("./world-control");
 const stateEngine = require("./state-engine");
 const deepState = require("./deep-state");
 const director = require("./director");
@@ -101,8 +100,6 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
 withMemory.addPlugin(pipeline);
 
 configCommander.addPlugin(pipeline);
-
-worldControl.addPlugin(pipeline);
 
 stateEngine.addPlugin(
   pipeline,
