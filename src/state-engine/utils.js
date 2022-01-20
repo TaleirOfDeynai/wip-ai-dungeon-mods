@@ -1,4 +1,5 @@
-const { dew, getEntryText } = require("../utils");
+const objectHash = require("object-hash");
+const { dew, memoize, getEntryText } = require("../utils");
 
 /**
  * Due to retarded limits in TypeScript, you can't use obvious type-guards
@@ -88,3 +89,25 @@ exports.stateDataString = (parts) => {
 
   return `${result}\n\t${exports.makeExcerpt(entryText)}`;
 };
+
+/**
+ * Creates a hash of a `WorldInfoEntry` object using only the properties important
+ * to State-Engine.
+ * 
+ * This can be used to determine if an entry has changed in a meaningful way
+ * between executions of the script.
+ * 
+ * This function uses memoization, which lasts for the life-time of this module,
+ * which is a single `input`, `context`, or `output` phase.
+ */
+exports.worldInfoHash = memoize(
+  /**
+   * @param {WorldInfoEntry} wiEntry
+   * @returns {string | undefined}
+   */
+  (wiEntry) => {
+    if (!wiEntry) return undefined;
+    const { id, name, type, keys, attributes, entry } = wiEntry;
+    return objectHash.sha1({ id, name, type, keys, attributes, entry });
+  }
+);

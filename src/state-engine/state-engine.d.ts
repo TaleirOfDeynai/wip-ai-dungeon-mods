@@ -76,7 +76,8 @@ interface StateEngineData {
    */
   entryId: string;
   /**
-   * Optional; provide to store the entry's text, if the entry is dynamic.
+   * Optional; provide to store the entry's text.  Especially useful if the entry is
+   * dynamic.
    */
   text?: string;
   /**
@@ -113,6 +114,10 @@ interface EngineDataForWorldInfo extends StateEngineData {
    * Can be used to check to see if it requires recalculation.
    */
   infoKey: WorldInfoEntry["keys"];
+  /**
+   * The hash of the `WorldInfoEntry` used to generate this data.
+   */
+  infoHash?: string;
 }
 
 interface StateDataForModifier extends StateEngineData {
