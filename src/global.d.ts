@@ -29,7 +29,6 @@ declare interface WorldInfoEntry {
   favorite: boolean;
   tags: string[];
   factionName: string | null;
-  hidden: boolean;
 }
 
 declare interface QuestInfo {
