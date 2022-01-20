@@ -1,8 +1,9 @@
 /// <reference path="./director.d.ts" />
 /// <reference path="../state-engine/state-engine.d.ts" />
-const { tuple } = require("../utils");
+const { tuple, getEntryText } = require("../utils");
 const { isParamsFor } = require("../state-engine/utils");
 const { addStateEntry } = require("../state-engine/registry");
+const eventEmitter = require("../events");
 
 /**
  * Does some global setup for this module.
@@ -123,6 +124,64 @@ const init = (data) => {
   }
 
   addStateEntry(DirectionEntry);
+
+  // If the author's note is unset, but we have a direction entry, set the note
+  // to that entry.  This can happen if the player set an author's note manually,
+  // but has since removed it.  We'll go back to normal operation.
+  if (!data.state.memory.authorsNote) {
+    const { state } = data;
+    if (state.$$currentDirectorSelection) {
+      const currentEntry = state.$$stateDataCache?.[state.$$currentDirectorSelection];
+      if (currentEntry?.text) {
+        state.memory.authorsNote = currentEntry.text;
+      }
+    }
+  }
+  
+  // Checks to see if this entry is the current direction entry, and then updates
+  // the author's note if the entry's text changed.
+  eventEmitter.on(
+    "state-engine.entryChanged",
+    /**
+     * @param {import("aid-bundler/src/aidData").AIDData} data 
+     * @param {WorldInfoEntry} wi 
+     * @param {EngineDataForWorldInfo} se 
+     */
+    (data, wi, se) => {
+      const { state } = data;
+      if (state.$$currentDirectorSelection !== wi.id) return;
+
+      const entryText = getEntryText(wi);
+      if (!entryText || entryText == se.text) return;
+
+      // Text has changed.  Now, are we still using the old text for the author's note?
+      // If its not set, we'll update off that too.
+      const { authorsNote } = state.memory;
+      if (authorsNote && authorsNote === se.text) return;
+
+      // Yes, we are.  So, update it to reflect the new text.
+      state.memory.authorsNote = entryText;
+    }
+  );
+
+  // Checks to see if the entry that was the current direction entry was removed and
+  // resets if so.
+  eventEmitter.on(
+    "state-engine.entryRemoved",
+    /**
+     * @param {import("aid-bundler/src/aidData").AIDData} data 
+     * @param {string} entryId
+     */
+    (data, entryId) => {
+      const { state } = data;
+      if (state.$$currentDirectorSelection !== entryId) return;
+      
+      // Reset; this run we'll select a new entry.
+      delete state.$$currentDirectorSelection;
+      delete state.$$currentDirectorSection;
+      delete state.memory.authorsNote;
+    }
+  );
 };
 
 /** @type {StateModule} */
