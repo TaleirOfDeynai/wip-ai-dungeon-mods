@@ -5,9 +5,10 @@
   "sideEffects": false,
   "dependencies": {
     "aid-bundler": "git://github.com/TaleirOfDeynai/aid-bundler.git",
-    "tiny-tfidf": "0.9.1",
+    "events": "3.3.0",
     "lancaster-stemmer": "2.0.0",
     "parsimmon": "1.18.0",
-    "stopwords": "0.0.9"
+    "stopwords": "0.0.9",
+    "tiny-tfidf": "0.9.1"
   }
 }

@@ -554,6 +554,9 @@ Commands:
 ### Turn-Cache
 A utility module that provides per-action caching capabilities.
 
+### Events
+A utility module providing an event emitter.
+
 ### Stemming
 A utility that provides a Lancaster word stemmer and TF-IDF capability for comparing and querying all the text currently in context.
 
