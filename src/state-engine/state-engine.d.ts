@@ -77,7 +77,7 @@ interface StateEngineData {
   entryId: string;
   /**
    * Optional; provide to store the entry's text.  Especially useful if the entry is
-   * dynamic.
+   * dynamic and needs to be recalled across multiple executions or phases.
    */
   text?: string;
   /**
@@ -94,6 +94,13 @@ interface StateEngineData {
    * An array of keyword configuration objects.
    */
   keywords: AnyKeywordDef[];
+}
+
+interface WorldInfoHash {
+  /** The hash for the full entry, to detect any changes. */
+  full: string;
+  /** The hash for only the entry's text.  Will be `""` if it had no text. */
+  text: string;
 }
 
 interface EngineDataForWorldInfo extends StateEngineData {
@@ -115,9 +122,10 @@ interface EngineDataForWorldInfo extends StateEngineData {
    */
   infoKey: WorldInfoEntry["keys"];
   /**
-   * The hash of the `WorldInfoEntry` used to generate this data.
+   * The hash of the `WorldInfoEntry` used to generate this data.  This allows
+   * us to discover changes to entries.
    */
-  infoHash?: string;
+  infoHash?: WorldInfoHash;
 }
 
 interface StateDataForModifier extends StateEngineData {

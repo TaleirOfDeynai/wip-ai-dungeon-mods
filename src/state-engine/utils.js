@@ -90,6 +90,22 @@ exports.stateDataString = (parts) => {
   return `${result}\n\t${exports.makeExcerpt(entryText)}`;
 };
 
+exports.hashText = memoize(
+  /**
+   * @param {Maybe<string>} text
+   * @returns {string}
+   */
+  (text) => {
+    // Fast path - If the text is empty, just use empty-string.
+    if (!text) return "";
+    // Fast path - These hashes are 40 characters long.  If the text's length
+    // is less than that, just use the text itself.
+    if (text.length <= 40) return text;
+    // Generate a hash for the text.
+    return objectHash.sha1({ text });
+  }
+);
+
 /**
  * Creates a hash of a `WorldInfoEntry` object using only the properties important
  * to State-Engine.
@@ -100,14 +116,17 @@ exports.stateDataString = (parts) => {
  * This function uses memoization, which lasts for the life-time of this module,
  * which is a single `input`, `context`, or `output` phase.
  */
-exports.worldInfoHash = memoize(
+exports.hashWorldInfo = memoize(
   /**
    * @param {WorldInfoEntry} wiEntry
-   * @returns {string | undefined}
+   * @returns {WorldInfoHash | undefined}
    */
   (wiEntry) => {
     if (!wiEntry) return undefined;
     const { id, name, type, keys, attributes, entry } = wiEntry;
-    return objectHash.sha1({ id, name, type, keys, attributes, entry });
+    return {
+      full: objectHash.sha1({ id, name, type, keys, attributes, entry }),
+      text: exports.hashText(entry)
+    }
   }
 );
