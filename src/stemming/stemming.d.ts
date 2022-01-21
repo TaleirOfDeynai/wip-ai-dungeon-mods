@@ -1,7 +1,7 @@
 namespace Stemming {
   type HistoryKey = `History(${number})`;
   type WorldInfoKey = `WorldInfo(${string})`;
-  type OtherKeys = "PlayerMemory" | "Summary" | "FrontMemory";
+  type OtherKeys = "PlayerMemory" | "FrontMemory";
 
   type AnyKey = HistoryKey | WorldInfoKey | OtherKeys;
 

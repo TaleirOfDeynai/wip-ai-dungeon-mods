@@ -11,9 +11,7 @@ const MAX_MEMORY = 1000;
 /** @typedef {Required<Pick<SortableEntry, "text" | "topics" | "relations">>} SortingParts */
 
 /**
- * Yields lines from the player memory, ignoring lines starting with a `#` symbol.
- * Currently, they just jam the summary into the player-defined memory with a comment
- * warning you not to screw things up.
+ * Yields lines from the player memory as sortable entries.
  * 
  * @param {string} playerMemory
  * @returns {Iterable<SortableEntry & { text: string }>}
@@ -22,37 +20,32 @@ const convertPlayerMemory = function* (playerMemory) {
   const lines = getText(playerMemory).split("\n");
   for (let i = 0, lim = lines.length; i < lim; i++) {
     const text = lines[i].trim();
-    if (text.startsWith("#")) continue;
     yield { text, priority: (i + 1000) * -1, score: 100 };
   }
 };
 
 /**
  * @param {string} playerMemory
- * The player memory.  May contain the summary portion if With-Memory is not running.
- * @param {string | undefined} summary
- * If With-Memory is running, the extracted summary.
+ * The player memory.
  * @param {StateDataCache} cacheData
  * The current-turn State Engine cache data.
  * @param {(id: string) => SortingParts} getEntryData
  * Function that obtains an entry's text.
  * @returns {string}
  */
-const produceContextMemory = (playerMemory, summary, cacheData, getEntryData) => {
+const produceContextMemory = (playerMemory, cacheData, getEntryData) => {
   const forContext = cacheData?.forContextMemory ?? [];
   const forHistory = cacheData?.forHistory ? Object.values(cacheData.forHistory) : [];
-  const resolvedSummary = summary ?? "";
 
   return chain()
     .concat(forContext, forHistory)
     .map((entry) => ({ ...entry, ...getEntryData(entry.entryId)}))
     .concat(convertPlayerMemory(playerMemory))
     .thru(entrySorter)
-    .thru((notes) => entrySelector(notes, MAX_MEMORY + 1 - resolvedSummary.length, {
+    .thru((notes) => entrySelector(notes, MAX_MEMORY + 1, {
       lengthGetter: ({ text }) => text.length + 1
     }))
     .map((note) => note.text.trim())
-    .concat(resolvedSummary)
     .filter(Boolean)
     .toArray()
     .join("\n");
@@ -70,13 +63,13 @@ const produceContextMemory = (playerMemory, summary, cacheData, getEntryData) =>
  */
 module.exports = (data) => {
   const { stateEngineContext: ctx } = data;
-  const { state: { memory }, playerMemory, summary } = data;
+  const { state: { memory }, playerMemory } = data;
 
   const cacheData = ctx.theCache.storage;
   if (!cacheData) return;
 
   const newContextMem = produceContextMemory(
-    playerMemory, summary, cacheData,
+    playerMemory, cacheData,
     (id) => {
       const entry = ctx.entriesMap[id];
       return {

@@ -6,9 +6,8 @@ This iteration is based on [AID-Bundler](https://github.com/AID-Bundler/aid-bund
 ## Installation
 Check the [Releases page](https://github.com/TaleirOfDeynai/wip-ai-dungeon-mods/releases) for a ready-to-use ZIP file.  Just upload the ZIP file into a scenario with the upload button and spend the next hour or two updating world-info with AID's new, buggy-as-duck World Info Library System.
 
-After you start your adventure, I recommend running the following commands:
+After you start your adventure, I recommend running the following command:
 * `/context-mode set narrator` will assemble the context sent to the AI so it kind of looks like an audio-book script...  Kinda?  You may want to pass it up if you prefer second-person over third-person, but it's the best of the available context modes, in my opinion.
-* `/with-memory summary updates on`, if you enable the Adventure Summary feature in the Edit Adventure menu.  This will display a message whenever the summary updates, so you can see how badly the AI got it.
 
 ## Installation 2: Install Harder
 If you want to tweak the scripts, customize the build, or what not, you'll need to do a few additional things.
@@ -518,7 +517,7 @@ You can see the messages produced by all the commands in the "Script Logs & Erro
 Example:
 > **`$Config`**
 > /context-mode set narrator
-> /with-memory summary updates on
+> /config total-recall.queryCountLimit = 50
 
 #### Configuring Module Options
 Some modules may provide configurable options to tweak how they work using commands.  Naturally, these options can be configured using a `$Config` entry or just executed from the game itself.
@@ -534,22 +533,15 @@ Commands:
 * `/config reset <namespace>.<key>` - Resets a config value to defaults.
 * `/config list` - Lists all currently set configs.
 
-### With-Memory
-Provides some player-memory enhancements.
+### Authors-Manual
+Provides a command that allows you to manipulate the programmatic Author's Note.
 
-* It can extract the AI-generated adventure summary from the player memory.  The summary will be available at `AIDData.summary`.  It will still include the "The story so far:" bit.
-* It will also clean out the comment that separates the player's memory from the summary.
-* It can also store summaries for rewind, however there is no API to _change_ the summary for the player, so this is just to help it generate things using the old summary when the player rewinds.  The player will still need to manually remove portions of the summary that may no longer be relevant at the new point in the story.
+This exists because at some point, the field in the "Pin" menu stopped working, so I needed a workaround.  It's also useful for debugging `$Direction` entries, from time-to-time.
 
 Commands:
 * `/set-authors-note <text>` sets an author's note.  The Author's Note field in the Pin menu doesn't work and this text is not available to scripts, meaning this is a way you can set it by hand.
-  * Note: the `$Direction` State-Engine entries will stop working if you set an author's note, as State-Engine is designed to not interfere with other scripts that may be doing their own thing.
+  * Note: the `$Direction` State-Engine entries will stop working if you set an author's note, as State-Engine is designed to not interfere with other scripts that may be doing their own thing with the field.
   * You can clear the author's note by running this command without providing text.  This sets it to an empty string.
-* `/with-memory summary updates` tells you if it will report summary updates.
-* `/with-memory summary updates on` enables a message that will show when the adventure summary changes.  This includes both the player changing it and the AI changing it, as it has no idea who was responsible.
-* `/with-memory summary updates off` disables the update message.
-* `/with memory report summary` displays the current summary as a message.
-* `/with-memory reset` clears With-Memory's managed caches.
 
 ### Turn-Cache
 A utility module that provides per-action caching capabilities.

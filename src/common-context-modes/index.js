@@ -18,7 +18,7 @@ const contextModifier = (config) => (data) => {
   // Only begin working after the second turn.
   if (data.actionCount <= 2) return;
 
-  const { state, playerMemory, summary } = data;
+  const { state, playerMemory } = data;
   const { authorsNote, frontMemory } = state.memory;
   const { maxChars, maxMemory } = getConfig(data);
 
@@ -126,9 +126,6 @@ const contextModifier = (config) => (data) => {
   const notesLength = joinedLength(notesText);
 
   const storyText = dew(() => {
-    // This comes behind the history we emit.
-    const theSummary = cleanText(summary).reverse();
-    const summaryLength = joinedLength(theSummary);
     // This comes in front of the history we emit.
     return chain([frontMemory])
       .concat(historyData)
@@ -143,7 +140,7 @@ const contextModifier = (config) => (data) => {
         story,
         // Have to account for the new lines...
         // @ts-ignore - Not typing the `reduce` correctly.
-        maxChars - [notesLength, config.notesBreak, summaryLength, authorsNoteLength].reduce(sumOfUsed(), 0),
+        maxChars - [notesLength, config.notesBreak, authorsNoteLength].reduce(sumOfUsed(), 0),
         {
           // Here we account for the new line separating each line of the story.
           lengthGetter: (text) => text ? text.length + 1 : 0
@@ -162,7 +159,7 @@ const contextModifier = (config) => (data) => {
         }
         else yield* story;
       })
-      .concat(theSummary, config.notesBreak)
+      .concat(config.notesBreak)
       .thru(iterReverse)
       .value();
   });

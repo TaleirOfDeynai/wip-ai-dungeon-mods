@@ -10,18 +10,14 @@ const { entrySelector } = require("../state-engine/entrySelection");
 
 const STYLE = "Style:";
 const NOTES = "Notes:";
-const SUMMARY = "Summary:";
 const STORY = "Story:";
-const EXCERPT = "Excerpt:";
-
-const reStorySoFar = /^The story so far:\s+((?:.|\s)*?)$/i;
 
 /** @type {BundledModifierFn} */
 const contextModifier = (data) => {
   // Only begin working after the second turn.
   if (data.actionCount <= 2) return;
 
-  const { state, playerMemory, summary } = data;
+  const { state, playerMemory } = data;
   const { authorsNote, frontMemory } = state.memory;
   const { maxChars, maxMemory } = getConfig(data);
 
@@ -42,19 +38,6 @@ const contextModifier = (data) => {
   });
 
   const styleLength = joinedLength(styleText);
-
-  // The summary is counted as a part of the story text instead of the memory.
-  const summaryText = dew(() => {
-    if (!summary) return [];
-    // @ts-ignore - TS too dumb with `??` and `[]`.
-    const [, fixedSummary] = reStorySoFar.exec(summary) ?? [];
-    if (!fixedSummary) return [];
-    const theSummary = cleanText(fixedSummary);
-    if (theSummary.length === 0) return [];
-    return [SUMMARY, ...theSummary];
-  });
-
-  const summaryLength = joinedLength(summaryText);
 
   // We require State Engine to function, but can still style a few things.
   const cacheData = getClosestCache(data);
@@ -105,8 +88,6 @@ const contextModifier = (data) => {
   const notesLength = joinedLength(notesText);
 
   const storyText = dew(() => {
-    // Swap the text if the summary is included.
-    const tagText = usedLength(summaryLength) > 0 ? EXCERPT : STORY;
     const theFrontMemory = cleanText(frontMemory).reverse();
     return chain(theFrontMemory)
       .concat(historyData)
@@ -117,17 +98,17 @@ const contextModifier = (data) => {
         storyText,
         // Have to account for the new lines...
         // @ts-ignore - Not typing the `reduce` correctly.
-        maxChars - [styleLength, summaryLength, notesLength, tagText].reduce(sumOfUsed(), 0),
+        maxChars - [styleLength, notesLength, STORY].reduce(sumOfUsed(), 0),
         {
           // Here we account for the new line separating each line of the story.
           lengthGetter: (text) => text ? text.length + 1 : 0
         }
       ))
-      .thru((storyText) => [tagText, ...iterReverse(storyText)])
+      .thru((storyText) => [STORY, ...iterReverse(storyText)])
       .value();
   });
 
-  data.text = [...styleText, ...notesText, ...summaryText, ...storyText].join("\n");
+  data.text = [...styleText, ...notesText, ...storyText].join("\n");
 };
 
 /**

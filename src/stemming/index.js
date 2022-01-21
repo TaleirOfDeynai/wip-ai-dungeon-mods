@@ -121,7 +121,6 @@ exports.compileEntries = (data, forContext = false) => {
 
   const otherSources = [
     tuple("PlayerMemory", data.playerMemory),
-    tuple("Summary", data.summary),
     tuple("FrontMemory", data.state.memory.frontMemory || "")
   ].filter(([_, text]) => Boolean(text));
 
