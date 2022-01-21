@@ -1,7 +1,7 @@
 /// <reference path="./director.d.ts" />
 /// <reference path="../state-engine/state-engine.d.ts" />
 const { tuple, getEntryText } = require("../utils");
-const { isParamsFor } = require("../state-engine/utils");
+const { isParamsFor, hashText } = require("../state-engine/utils");
 const { addStateEntry } = require("../state-engine/registry");
 const eventEmitter = require("../events");
 
@@ -110,9 +110,10 @@ const init = (data) => {
       // The last selected entry will be held for 12 actions before an opportunity
       // to change it again is allowed.
       const { actionCount, state } = data;
-      const { $$currentDirectorSection } = state;
+      const { $$currentDirectorSection, $$currentDirectorSelection } = state;
       const currentSection = (actionCount / 12) | 0;
       checks: {
+        if ($$currentDirectorSelection == null) break checks;
         if ($$currentDirectorSection == null) break checks;
         if ($$currentDirectorSection !== currentSection) break checks;
         return false;
@@ -124,67 +125,91 @@ const init = (data) => {
   }
 
   addStateEntry(DirectionEntry);
-
-  // If the author's note is unset, but we have a direction entry, set the note
-  // to that entry.  This can happen if the player set an author's note manually,
-  // but has since removed it.  We'll go back to normal operation.
-  if (!data.state.memory.authorsNote) {
-    const { state } = data;
-    if (state.$$currentDirectorSelection) {
-      const currentEntry = state.$$stateDataCache?.[state.$$currentDirectorSelection];
-      if (currentEntry?.text) {
-        state.memory.authorsNote = currentEntry.text;
-      }
-    }
-  }
-  
-  // Checks to see if this entry is the current direction entry, and then updates
-  // the author's note if the entry's text changed.
-  eventEmitter.on(
-    "state-engine.entryChanged",
-    /**
-     * @param {import("aid-bundler/src/aidData").AIDData} data 
-     * @param {WorldInfoEntry} wi 
-     * @param {EngineDataForWorldInfo} se 
-     */
-    (data, wi, se) => {
-      const { state } = data;
-      if (state.$$currentDirectorSelection !== wi.id) return;
-
-      const entryText = getEntryText(wi);
-      if (!entryText || entryText == se.text) return;
-
-      // Text has changed.  Now, are we still using the old text for the author's note?
-      // If its not set, we'll update off that too.
-      const { authorsNote } = state.memory;
-      if (authorsNote && authorsNote === se.text) return;
-
-      // Yes, we are.  So, update it to reflect the new text.
-      state.memory.authorsNote = entryText;
-    }
-  );
-
-  // Checks to see if the entry that was the current direction entry was removed and
-  // resets if so.
-  eventEmitter.on(
-    "state-engine.entryRemoved",
-    /**
-     * @param {import("aid-bundler/src/aidData").AIDData} data 
-     * @param {string} entryId
-     */
-    (data, entryId) => {
-      const { state } = data;
-      if (state.$$currentDirectorSelection !== entryId) return;
-      
-      // Reset; this run we'll select a new entry.
-      delete state.$$currentDirectorSelection;
-      delete state.$$currentDirectorSection;
-      delete state.memory.authorsNote;
-    }
-  );
 };
+
+/**
+ * Gets the text that is expected to be in `state.memory.authorsNote` for the currently
+ * selected `$Direction` entry.
+ * 
+ * @param {AIDData} data 
+ * @returns {string | undefined}
+ */
+const getExpectedText = ({ worldEntries, state }) => {
+  if (state.$$currentDirectorSelection == null) return undefined;
+
+  // Locate the world-info for our selected entry.
+  const currentEntry = worldEntries.find((wi) => wi.id === state.$$currentDirectorSelection);
+  if (!currentEntry) return undefined;
+
+  // Check to make sure we have something meaningful.
+  const expectedText = getEntryText(currentEntry);
+  return expectedText.trim() ? expectedText : undefined;
+};
+
+/**
+ * Re-enables the direction entry if the author's note is found to be empty, but
+ * there should be a direction note set.
+ * 
+ * This can happen if the `/set-authors-note` command was used.
+ * 
+ * @type {BundledModifierFn}
+ */
+const restoreMissingDirection = (data) => {
+  const { state } = data;
+  if (state.memory.authorsNote) return;
+
+  const expectedText = getExpectedText(data);
+  if (!expectedText) return;
+
+  state.memory.authorsNote = expectedText;
+};
+
+// Listens for entry changes, checking to see if this entry is the current direction
+// entry, and then updates the author's note if the entry's text changed.
+eventEmitter.on(
+  "state-engine.entryTextChanged",
+  /**
+   * @param {import("aid-bundler/src/aidData").AIDData} data 
+   * @param {WorldInfoEntry} wiEntry 
+   * @param {EngineDataForWorldInfo} seEntry 
+   */
+  (data, wiEntry, seEntry) => {
+    const { state } = data;
+    if (seEntry.infoHash?.text == null) return;
+    if (state.$$currentDirectorSelection !== wiEntry.id) return;
+
+    // Do nothing if the entry has no text or its essentially empty.
+    const newText = getEntryText(wiEntry);
+    if (!newText.trim()) return;
+
+    // Entry has changed.  Now, are we still using the old text for the author's note?
+    // If its not currently set, we'll update for that case too.
+    const { authorsNote } = state.memory;
+    if (authorsNote && hashText(authorsNote) === seEntry.infoHash.text) return;
+
+    // Update to reflect the new text.
+    state.memory.authorsNote = newText;
+  }
+);
+
+// Listens for entry removals, checking to see if the entry that was the current direction
+// entry was removed and resets if so.
+eventEmitter.on(
+  "state-engine.entryRemoved",
+  /**
+   * @param {import("aid-bundler/src/aidData").AIDData} data 
+   * @param {string} entryId
+   */
+  (data, entryId) => {
+    const { state } = data;
+    if (state.$$currentDirectorSelection !== entryId) return;
+    
+    // Clear the currently selected entry; this run we should select a new entry.
+    delete state.$$currentDirectorSelection;
+  }
+);
 
 /** @type {StateModule} */
 exports.stateModule = {
-  pre: [init]
+  pre: [init, restoreMissingDirection]
 };
