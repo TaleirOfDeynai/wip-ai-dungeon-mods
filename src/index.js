@@ -13,6 +13,8 @@ const annotatedMode = require("./annotated-context-mode");
 
 const pipeline = new Pipeline();
 
+// Reports the serialized structure and own-property keys of a value of the global
+// object.  Used in API discovery.
 pipeline.commandHandler.addCommand(new SimpleCommand(
   "report-global",
   (data, [name]) => {
@@ -31,6 +33,7 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
   })
 );
 
+// Reports a list of all own-properties of the global object.  Used in API discovery.
 pipeline.commandHandler.addCommand(new SimpleCommand(
   "report-global-vars",
   (data, [arg]) => {
@@ -51,6 +54,10 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
   })
 );
 
+// Reports the identity of a value of a global property.
+// Provide a property path to inspect, separating the property keys with spaces.
+// To get: `history[20].entry`
+// Use the command: `/report-prop history 20 entry`.
 pipeline.commandHandler.addCommand(new SimpleCommand(
   "report-prop",
   (data, args) => {
@@ -89,6 +96,7 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
   })
 );
 
+// Dumps the available history as a message.
 pipeline.commandHandler.addCommand(new SimpleCommand(
   "dump-history",
   (data) => {
