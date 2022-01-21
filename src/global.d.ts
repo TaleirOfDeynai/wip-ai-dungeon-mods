@@ -3,7 +3,13 @@ declare namespace console {
 }
 
 declare interface Array<T> {
+  // Fixes `filter` so it recognizes when the `Boolean` constructor is being used
+  // as a predicate.  Supposedly, it was their intention it work like this, but it don't.
+  // I know, TypeScript maintainers.  Types are hard, especially when you've built a
+  // house-of-cards type-system.
   filter(predicate: BooleanConstructor): Exclude<T, null | undefined>[];
+  // Fixes incorrect typings for `Array.reduce`.  Really, TS?  I have to fix `reduce`?
+  reduce<TOut>(callbackFn: (previousValue: TOut, nextValue: T) => TOut, initialValue: TOut): TOut;
 }
 
 declare type TypePredicate<T> = (value: any) => value is T;

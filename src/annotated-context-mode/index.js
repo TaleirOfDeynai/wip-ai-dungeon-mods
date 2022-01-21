@@ -71,7 +71,6 @@ const contextModifier = (data) => {
       .thru((notes) => entrySelector(
         notes,
         // Have to account for the new lines for `styleLines` and `NOTES`.
-        // @ts-ignore - Not typing the `reduce` correctly.
         maxMemory - [styleLength, NOTES].reduce(sumOfUsed(), 0),
         { lengthGetter: ({ text }) => text.length + 1 }
       ))
@@ -97,7 +96,6 @@ const contextModifier = (data) => {
       .thru((storyText) => limitText(
         storyText,
         // Have to account for the new lines...
-        // @ts-ignore - Not typing the `reduce` correctly.
         maxChars - [styleLength, notesLength, STORY].reduce(sumOfUsed(), 0),
         {
           // Here we account for the new line separating each line of the story.

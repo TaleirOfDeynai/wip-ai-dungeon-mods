@@ -109,7 +109,6 @@ const contextModifier = (config) => (data) => {
       .thru((notes) => entrySelector(
         notes,
         // Have to account for the new lines for `styleLines` and `notesHeader`.
-        // @ts-ignore - Not typing the `reduce` correctly.
         maxMemory - [authorsNoteLength, config.notesHeader].reduce(sumOfUsed(), 0),
         { lengthGetter: ({ text }) => text.length + 1 }
       ))
@@ -139,7 +138,6 @@ const contextModifier = (config) => (data) => {
       .thru((story) => limitText(
         story,
         // Have to account for the new lines...
-        // @ts-ignore - Not typing the `reduce` correctly.
         maxChars - [notesLength, config.notesBreak, authorsNoteLength].reduce(sumOfUsed(), 0),
         {
           // Here we account for the new line separating each line of the story.
