@@ -98,20 +98,9 @@ const emitCacheData = function* (aidData) {
 /** @type {Array<[string | RegExp, SimpleCommandHandler]>} */
 const commandPatterns = [
   // Reports more readable information about the latest turn.
-  ["report latest", (data) => {
-    /** @type {import("../turn-cache").ReadCache<StateDataCache>} */
-    const theCache = turnCache.forRead(data, "StateEngine.association", { loose: true });
-    const { storage } = theCache;
-    if (!storage) return "No State-Engine data is available.";
-    return reportOnCache(data, { ...storage, fromTurn: theCache.fromTurn });
-  }],
-  // Reports more readable information about the last likely player-instigated turn.
   ["report", (data) => {
-    const [latestTurn, prevTurn] = emitCacheData(data);
+    const [latestTurn] = emitCacheData(data);
     if (!latestTurn) return "No State-Engine data is available.";
-    if (latestTurn.phase === "input") return reportOnCache(data, latestTurn);
-    if (prevTurn?.phase === "input") return reportOnCache(data, prevTurn);
-    if (prevTurn?.phase === "output") return reportOnCache(data, prevTurn);
     return reportOnCache(data, latestTurn);
   }],
   // Debug command; clears the cache.
@@ -137,5 +126,5 @@ exports.addPlugin = (pipeline, ...stateModules) => {
     pipeline.commandHandler.addCommand(cmd);
   
   const theModifier = exports.mainModifier(...stateModules);
-  pipeline.addPlugin(new Plugin("State Engine", theModifier, undefined, theModifier));
+  pipeline.addPlugin(new Plugin("State Engine", undefined, theModifier, undefined));
 };
