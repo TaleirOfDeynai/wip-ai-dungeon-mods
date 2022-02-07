@@ -54,12 +54,10 @@ exports.associationsHelper = function* (data, usedTopics) {
   }
 
   // Now we'll do the actual history texts.
-  for (const [index, historyEntry] of iterArray(ctx.workingHistory)) {
-    const offset = ctx.workingHistory.length - 1 - index;
+  for (const historyEntry of ctx.workingHistory)
     for (const matcher of ctx.sortedStateMatchers)
       if (matcher.targetSources.has("history"))
-        yield [matcher, { source: offset, entry: historyEntry, usedTopics }];
-  }
+        yield [matcher, { source: historyEntry.origin, entry: historyEntry, usedTopics }];
 };
 
 exports.makePreRuleIterators = dew(() => {

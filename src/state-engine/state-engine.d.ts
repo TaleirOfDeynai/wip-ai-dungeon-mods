@@ -155,7 +155,7 @@ interface AssociationParamTypes {
   "playerMemory": { source: "playerMemory", entry: string };
   "authorsNote": { source: "authorsNote" };
   "frontMemory": { source: "frontMemory" };
-  "history": { source: number, entry: HistoryEntry, usedTopics: UsedTopicsMap };
+  "history": { source: number, entry: HistoryIteratorResult, usedTopics: UsedTopicsMap };
 }
 
 type AssociationTargets = keyof AssociationParamTypes;
@@ -273,9 +273,44 @@ interface Context {
   entriesMap: Record<string, StateEngineEntry>;
   validationIssues: Map<string, string[]>;
   sortedStateMatchers: import("./MatchableEntry").MatchableEntry[];
-  workingHistory: HistoryEntry[];
+  workingHistory: HistoryIteratorResult[];
   stateAssociations: StateAssociations;
   scoresMap: ScoresMap;
+}
+
+interface HistorySources {
+  /**
+   * A map from an entry's original offset to its original entry.
+   * Will contain more than one entry when multiple entries were combined.
+   */
+  readonly entries: Map<number, HistoryEntry>;
+
+  /** A set of types that collectively make up the result. */
+  readonly types: Set<HistoryEntry["type"]>;
+}
+
+interface HistoryIteratorResult {
+  /** An object containing information on the origins of this result. */
+  readonly sources: HistorySources;
+
+  /** The emitted offset for this entry.  Use this for sorting purposes. */
+  readonly offset: number;
+
+  /**
+   * One offset from the `histories` array that should be used to represent
+   * the combined entry.  For instance, if joining paragraphs together,
+   * this might be the offset of the original entry that started the paragraph.
+   */
+  readonly origin: number;
+
+  /**
+   * The type of history entry.  This could be `HistoryEntry["type"]` but is
+   * left open in case things get more complicated.
+   */
+  readonly type: string;
+
+  /** The text for this entry. */
+  readonly text: string;
 }
 
 declare interface GameState {

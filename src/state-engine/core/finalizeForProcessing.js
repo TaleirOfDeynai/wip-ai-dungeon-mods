@@ -1,4 +1,5 @@
-const { dew, escapeRegExp } = require("../../utils");
+const { dew, escapeRegExp, chain, take } = require("../../utils");
+const actionIterator = require("../iterators/perAction");
 
 /**
  * @param {StateEngineEntry} source
@@ -69,19 +70,22 @@ module.exports = (data) => {
   const { stateEngineContext: ctx, history } = data;
   const entryCount = ctx.config.get("integer", "entryCount");
 
-  ctx.workingHistory = dew(() => {
-    const slicedHistory = history.slice(-1 * entryCount);
+  /** @type {HistoryEntry | undefined} */
+  const extraEntry = dew(() => {
     switch (data.phase) {
       // We don't know what the input mode was, so we have to parse it.
       case "input":
-        return [...slicedHistory, { text: data.text, type: parseInputMode(data) }];
+        return { text: data.text, type: parseInputMode(data) };
       // Treat the AI's response as a continuation.
       case "output":
-        return [...slicedHistory, { text: data.text, type: "continue" }];
-      default:
-        return slicedHistory;
+        return { text: data.text, type: "continue" };
     }
+    return undefined;
   });
+
+  ctx.workingHistory = chain(extraEntry ? [...history, extraEntry] : history)
+    .thru(actionIterator)
+    .value((entries) => [...take(entries, entryCount)].reverse());
 
   ctx.sortedStateMatchers = Object.keys(ctx.entriesMap)
     .map((id) => ctx.entriesMap[id])
