@@ -289,6 +289,41 @@ exports.iterPosition = function* (iter) {
 };
 
 /**
+ * Takes up to `count` elements from the beginning of the iterable.
+ * 
+ * @template T
+ * @param {Iterable<T>} iterable
+ * @param {number} count
+ * @returns {Iterable<T>}
+ */
+exports.take = function* (iterable, count) {
+  if (Array.isArray(iterable)) {
+    // Ensure `count` is between 0 and the number of items in the array.
+    count = Math.max(0, Math.min(iterable.length, count ?? iterable.length));
+    for (let i = 0; i < count; i++) yield iterable[i];
+  }
+  else {
+    const iterator = iterable[Symbol.iterator]();
+    let v = iterator.next();
+    for (let i = 0; i < count && !v.done; i++) {
+      yield v.value;
+      v = iterator.next();
+    }
+  }
+};
+
+/**
+ * Takes up to `count` elements from the end of the iterable.  The original order
+ * will be preserved, unlike in `iterReverse`.
+ * 
+ * @template T
+ * @param {Iterable<T>} iterable
+ * @param {number} count
+ * @returns {Array<T>}
+ */
+exports.takeRight = (iterable, count) => [...exports.iterReverse(iterable, count)].reverse();
+
+/**
  * Creates an iterable that transforms values.
  * 
  * @template TIn
@@ -491,6 +526,27 @@ exports.memoize = (fn) => {
     if (store.has(arg)) return store.get(arg);
     const result = fn(arg);
     store.set(arg, result);
+    return result;
+  };
+};
+
+/**
+ * Wraps the given zero-arity pure function so it will only be called once.
+ * Any additional calls will return a cached result.
+ * 
+ * @template T
+ * @param {() => T} fn
+ * @returns {() => T}
+ */
+exports.callOnce = (fn) => {
+  /** @type {T} */
+  let result;
+  let didCall = false;
+
+  return () => {
+    if (didCall) return result;
+    didCall = true;
+    result = fn();
     return result;
   };
 };
