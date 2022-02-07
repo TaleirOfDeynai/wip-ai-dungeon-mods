@@ -245,7 +245,8 @@ interface StateDataCache {
    * - `key` - An offset from the current history entry.
    *   - A value of `0` indicates the current `text`.
    *   - A value like `1` indicates `history[history.length - 1]`.
-   * - `value` - A `StateEngineEntry` ID.
+   * - `value` - A `StateEngineCacheData` with information about the entry that
+   *   was associated.
    */
   forHistory: Record<number, StateEngineCacheData>;
 };
