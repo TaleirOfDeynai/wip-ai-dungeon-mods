@@ -16,9 +16,10 @@ const init = () => {
    class ConfigEntry extends EngineEntryForWorldInfo {
     /**
      * @param {WorldInfoEntry} worldInfo
+     * @param {Context["config"]} config
      */
-    constructor(worldInfo) {
-      super(worldInfo);
+    constructor(worldInfo, config) {
+      super(worldInfo, config);
     }
 
     static get forType() { return "Config"; }
