@@ -1,6 +1,6 @@
 /// <reference path="./common-context-mode.d.ts" />
 /// <reference path="../context-mode/context-mode.d.ts" />
-const { dew, getText } = require("../utils");
+const { dew, is, getText } = require("../utils");
 const { chain, iterReverse, iterPosition, limitText } = require("../utils");
 const { getClosestCache, getStateEngineData, buildHistoryData } = require("../context-mode/utils");
 const { cleanText, sumOfUsed, joinedLength } = require("../context-mode/utils");
@@ -48,12 +48,17 @@ const contextModifier = (config) => (data) => {
   /** @type {Iterable<CommonModeEntry>} */
   const theNotes = dew(() => {
     const forContext = cacheData?.forContextMemory ?? [];
-    const forHistory = cacheData?.forHistory ? Object.values(cacheData.forHistory) : [];
+    const forHistory = cacheData?.forHistory ?? [];
     return chain()
-      .concat(forContext, forHistory)
+      .concat(forContext)
+      .concat(forHistory)
       .map((cached) => getStateEngineData(data, cached))
       .filter(Boolean)
-      .filter((sd) => typeof sd.source !== "number" || historySources.has(sd.source))
+      .filter((sd) => {
+        if (sd.source !== "history") return true;
+        const startSource = sd.start.source;
+        return is.number(startSource) && historySources.has(startSource);
+      })
       .map((sd) => ({ ...sd, text: cleanText(sd.text).join("  ") }))
       .thru(function* (iterStateData) {
         // Materialize the iterable, as we need to run through it twice.
@@ -65,9 +70,9 @@ const contextModifier = (config) => (data) => {
         const [leeway, maxHistory] = dew(() => {
           let maxHistory = 0;
           for (const entry of allStateData) {
-            if (typeof entry.source !== "number") continue;
-            if (entry.source <= maxHistory) continue;
-            maxHistory = entry.source;
+            if (entry.source !== "history") continue;
+            if (entry.start.source <= maxHistory) continue;
+            maxHistory = entry.start.source;
           }
           if (maxHistory <= 2) return [0, 0];
           return [2, maxHistory];
@@ -83,10 +88,10 @@ const contextModifier = (config) => (data) => {
 
         for (const sd of allStateData) {
           // We allow the first 3 to emit without penalty.
-          if (typeof sd.source !== "number") yield sd;
-          else if (sd.source <= leeway) yield sd;
+          if (sd.source !== "history") yield sd;
+          else if (sd.start.source <= leeway) yield sd;
           else {
-            const adjSource = sd.source - leeway;
+            const adjSource = sd.start.source - leeway;
             const scoreScalar = 1 - ((adjSource / adjMax) * 0.5);
             yield { ...sd, score: sd.score * scoreScalar };
           }

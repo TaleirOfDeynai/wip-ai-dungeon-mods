@@ -1,6 +1,6 @@
-const { tuple2, groupBy, iterReverse, chain } = require("../../utils");
+const { shutUpTS, is, tuple2, groupBy, iterReverse, chain } = require("../../utils");
 const { Roulette } = require("../../utils/Roulette");
-const { associationsHelper, getAssociationSet } = require("./_helpers");
+const { associationsHelper, getAssociationsFor, createAssocData } = require("./_helpers");
 const { makePreRuleIterators, toPostRuleIterators } = require("./_helpers");
 
 /**
@@ -16,7 +16,21 @@ const spinToWin = function* (roulette) {
 };
 
 /**
- * Runs the state valuators and picks a single entry per assocaition source,
+ * @param {Context} ctx 
+ * @param {MatchableEntry} matcher 
+ * @param {AssociationSources} source 
+ * @returns {AssociationData}
+ */
+const rebuildParams = (ctx, matcher, source) => {
+  if (is.number(source)) {
+    const entry = shutUpTS(ctx.workingHistory.get(source));
+    return createAssocData(matcher, { source, entry });
+  }
+  return createAssocData(matcher, { source });
+}
+
+/**
+ * Runs the state valuators and picks a single entry per association source,
  * except the `implicit` source, which may have more than one.
  * 
  * @type {BundledModifierFn}
@@ -24,9 +38,13 @@ const spinToWin = function* (roulette) {
 module.exports = (data) => {
   const { stateEngineContext: ctx } = data;
 
+  /** @type {Array<[AssociationSources, Array<[MatchableEntry, number]>]>} */
   const winnersArr = chain(associationsHelper(data))
+    // Filter out entries that did not associate with the source.
+    // `associationsHelper` just handles pairing entries together with sources
+    // they are meant for.  We still need to check for the association.
     .filter(([matcher, { source }]) => {
-      const theSet = getAssociationSet(ctx, source);
+      const theSet = getAssociationsFor(ctx, source);
       if (!theSet) return false;
       return theSet.has(matcher.entryId);
     })
@@ -71,8 +89,7 @@ module.exports = (data) => {
   const theWinners = new Map();
 
   for (const [source, theContestants] of iterReverse(winnersArr)) {
-    // Implicits are treated a little bit different.  It can have multiple
-    // entries, but only one entry per type.
+    // Implicit associations can have multiple entries, but only one entry per type.
     if (source === "implicit") {
       /** @type {Set<StateEngineEntry["type"]>} */
       const usedTypes = new Set();
@@ -91,10 +108,10 @@ module.exports = (data) => {
         usedEntryIds.add(entryId);
         usedEntries.push([matcher.stateEntry, source]);
         usedTypes.add(type);
-        winnerArr.push(entryId);
+        winnerArr.push(rebuildParams(ctx, matcher, source));
       }
 
-      theWinners.set(source, new Set(winnerArr));
+      theWinners.set(source, new Map(winnerArr.map((v) => tuple2(v.entry.entryId, v))));
     }
     else {
       for (const [matcher, score] of theContestants) {
@@ -108,7 +125,7 @@ module.exports = (data) => {
 
         usedEntryIds.add(entryId);
         usedEntries.push([matcher.stateEntry, source]);
-        theWinners.set(source, new Set([entryId]));
+        theWinners.set(source, new Map([tuple2(entryId, rebuildParams(ctx, matcher, source))]));
         break;
       }
     }

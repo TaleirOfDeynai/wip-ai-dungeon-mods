@@ -1,6 +1,6 @@
 /// <reference path="./annotated-context-mode.d.ts" />
 /// <reference path="../context-mode/context-mode.d.ts" />
-const { dew, getText } = require("../utils");
+const { dew, is, getText } = require("../utils");
 const { chain, iterReverse, limitText } = require("../utils");
 const { getClosestCache, getStateEngineData, buildHistoryData } = require("../context-mode/utils");
 const { cleanText, usedLength, sumOfUsed, joinedLength } = require("../context-mode/utils");
@@ -47,12 +47,17 @@ const contextModifier = (data) => {
   /** @type {Iterable<AnnotatedEntry>} */
   const theNotes = dew(() => {
     const forContext = cacheData?.forContextMemory ?? [];
-    const forHistory = cacheData?.forHistory ? Object.values(cacheData.forHistory) : [];
+    const forHistory = cacheData?.forHistory ?? [];
     return chain()
-      .concat(forContext, forHistory)
+      .concat(forContext)
+      .concat(forHistory)
       .map((cached) => getStateEngineData(data, cached))
       .filter(Boolean)
-      .filter((sd) => typeof sd.source !== "number" || historySources.has(sd.source))
+      .filter((sd) => {
+        if (sd.source !== "history") return true;
+        const startSource = sd.start.source;
+        return is.number(startSource) && historySources.has(startSource);
+      })
       .map((sd) => ({ ...sd, text: cleanText(sd.text).join("  ") }))
       .concat(dew(() => {
         if (!playerMemory) return [];

@@ -1,4 +1,4 @@
-const { dew, escapeRegExp, chain, take } = require("../../utils");
+const { dew, escapeRegExp, chain, take, tuple2 } = require("../../utils");
 const actionIterator = require("../iterators/perAction");
 
 /**
@@ -85,7 +85,9 @@ module.exports = (data) => {
 
   ctx.workingHistory = chain(extraEntry ? [...history, extraEntry] : history)
     .thru(actionIterator)
-    .value((entries) => [...take(entries, entryCount)].reverse());
+    .thru((entries) => take(entries, entryCount))
+    .map((entry) => tuple2(entry.offset, entry))
+    .value((entries) => new Map([...entries].reverse()));
 
   ctx.sortedStateMatchers = Object.keys(ctx.entriesMap)
     .map((id) => ctx.entriesMap[id])

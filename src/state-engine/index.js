@@ -10,6 +10,39 @@ const { stateModule: classModule } = require("./standard/class");
 const turnCache = require("../turn-cache");
 
 /**
+ * Orders `CacheData.HistoryCacheData` by:
+ * - Entries with fragments that end later.
+ * - Entries with fragments that start later.
+ * - Undefined otherwise.
+ * 
+ * Assumes `start.source` will always be greater than `end.source`.
+ * And remember, the "later action" has a smaller `source` value, since it
+ * is offset from the END of the `history` array.
+ * 
+ * @param {CacheData.HistoryCacheData} a 
+ * @param {CacheData.HistoryCacheData} b 
+ */
+const historyEntrySorter = (a, b) => {
+  if (a.end.source !== b.end.source) {
+    // Sort the later action up.
+    return a.end.source - b.end.source;
+  }
+
+  // Sort the fragment ending later up.
+  const endOff = b.end.offset - a.end.offset;
+  if (endOff !== 0) return endOff;
+
+  // Endings of fragments are equal.  Try sorting off the start now.
+  if (a.start.source !== b.start.source) {
+    // Sort the later action up.
+    return a.start.source - b.start.source;
+  }
+
+  // Sort the fragment starting later up.
+  return b.start.offset - a.start.offset;
+};
+
+/**
  * Constructs an input modifier from the given list of `StateModule` instances.
  * 
  * @param {...StateModule} stateModules
@@ -69,8 +102,15 @@ const reportOnCache = (aidData, storage) => {
   const worldInfoMap = fromPairs(aidData.worldEntries.map((wi) => tuple2(wi.id, wi)));
   const theHeader = `From turn ${storage.fromTurn} (${storage.phase || "unknown"} phase)`;
   const theReport = chain()
-    .concat(storage.forContextMemory.map((v) => tuple2("Context Memory", v)))
-    .concat(chain(toPairs(storage.forHistory)).map(([loc, entry]) => [`History ${loc}`, entry]).value())
+    .concat(
+      storage.forContextMemory
+        .map((v) => tuple2("Context Memory", v))
+    )
+    .concat(
+      storage.forHistory
+        .map((entry) => tuple2(entry.desc, entry))
+        .sort((a, b) => historyEntrySorter(a[1], b[1]))
+    )
     .concat([tuple2("Author's Note", storage.forAuthorsNote)])
     .concat([tuple2("Front Memory", storage.forFrontMemory)])
     .thru((entries) => reportOnEntry(worldInfoMap, $$stateDataCache, entries))

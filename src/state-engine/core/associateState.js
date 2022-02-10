@@ -1,4 +1,4 @@
-const { associationsHelper, getAssociationSet } = require("./_helpers");
+const { associationsHelper, getAssociationsFor, createAssocData } = require("./_helpers");
 
 /**
  * Goes through the available texts, determining which `StateEngineEntry` objects
@@ -13,9 +13,7 @@ module.exports = (data) => {
   const usedTopics = new Map();
 
   for (const [matcher, params] of associationsHelper(data, usedTopics)) {
-    const result = matcher.stateEntry.associator(matcher, params);
-    if (result) getAssociationSet(ctx, params.source, true).add(matcher.entryId);
+    if (!matcher.stateEntry.associator(matcher, params)) continue;
+    getAssociationsFor(ctx, params.source, true).set(matcher.entryId, createAssocData(matcher, params));
   }
-
-  //console.log([...usedTopics].map(([topic, theSet]) => `${topic} uses: ${[...theSet].join(", ")}`));
 };

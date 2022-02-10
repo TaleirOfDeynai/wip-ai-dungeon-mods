@@ -15,7 +15,7 @@ const getConfig = require("../config");
     entriesMap: {},
     validationIssues: new Map(),
     sortedStateMatchers: [],
-    workingHistory: [],
+    workingHistory: new Map(),
     stateAssociations: new Map(),
     scoresMap: new Map()
   };

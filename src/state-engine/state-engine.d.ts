@@ -132,12 +132,90 @@ interface StateDataForModifier extends StateEngineData {
   topics: Set<string>;
 }
 
-type StateAssociations = Map<AssociationSources, Set<StateEngineEntry["entryId"]>>;
+interface HistoryFragment {
+  /**
+   * The offset of the source entry, from the latest entry, from which the
+   * text should be drawn from.
+   */
+  readonly source: number;
 
-interface GetAssociationSetFn {
-  (source: AssociationSources, create: true): Set<StateEngineEntry["entryId"]>;
-  (source: AssociationSources, create?: false): Maybe<Set<StateEngineEntry["entryId"]>>;
+  /**
+   * The character offset from the start/end of entry's text defining a boundary
+   * of the fragment.
+   */
+  readonly offset: number;
 }
+
+interface HistorySources {
+  /**
+   * A map from an entry's original offset to its original entry.
+   * Will contain more than one entry when multiple entries were combined.
+   */
+  readonly entries: Map<number, HistoryEntry>;
+
+  /** A set of types that collectively make up the result. */
+  readonly types: Set<HistoryEntry["type"]>;
+
+  /**
+   * The location beginning the text fragment.  `offset` is relative to the
+   * beginning of the `HistoryEntry["text"]` string.
+   */
+  readonly start: HistoryFragment;
+
+  /**
+   * The location closing the text fragment.  `offset` is relative to the
+   * end of the `HistoryEntry["text"]` string.
+   */
+  readonly end: HistoryFragment;
+}
+
+interface HistoryIteratorResult {
+  /** An object containing information on the origins of this result. */
+  readonly sources: HistorySources;
+
+  /** The emitted offset for this entry.  Use this for sorting purposes. */
+  readonly offset: number;
+
+  /**
+   * The type of history entry.  This could be `HistoryEntry["type"]` but is
+   * left open in case things get more complicated.
+   */
+  readonly type: string;
+
+  /** The text for this entry. */
+  readonly text: string;
+
+  /** A string for user reporting to help them understand where this text came from. */
+  readonly desc: string;
+}
+
+namespace AssociationData {
+  interface Base {
+    /** The entry. */
+    entry: StateEngineEntry;
+  }
+
+  interface HistoryAssociationData extends Base {
+    /** A string indicating the source of the association's text. */
+    source: number;
+    /** A description of how the history entry was associated; for user reports. */
+    desc: HistoryIteratorResult["desc"];
+    /** The start of the text fragment. */
+    start: HistorySources["start"];
+    /** The end of the text fragment. */
+    end: HistorySources["end"];
+  }
+
+  interface GeneralAssociationData extends Base {
+    /** A string indicating the source of the association's text. */
+    source: Exclude<AssociationSources, number>;
+  }
+}
+
+type AssociationData = AssociationData.HistoryAssociationData | AssociationData.GeneralAssociationData;
+
+type EntryToAssociationMap = Map<StateEngineEntry["entryId"], AssociationData>;
+type StateAssociations = Map<AssociationSources, EntryToAssociationMap>;
 
 interface StateValidatorFn {
   (stateData: StateEngineData): string[];
@@ -224,31 +302,50 @@ interface PostRuleIterators {
   selected: PostRuleIterator;
 }
 
-interface StateEngineCacheData {
-  entryId: StateEngineData["entryId"];
-  score: number;
-  priority: number | null;
-  source: AssociationSources;
+namespace CacheData {
+  interface Base {
+    /** ID of the entry that was associated with the text. */
+    entryId: StateEngineData["entryId"];
+    /** The association score that won it the association. */
+    score: number;
+    /** The insertion priority of the associated entry; influences ordering. */
+    priority: number | null;
+  }
+
+  interface HistoryCacheData extends Base {
+    /** A string indicating the source of the association's text. */
+    source: "history";
+    /** A description of how the history entry was associated; for user reports. */
+    desc: HistoryIteratorResult["desc"];
+    /** The start of the text fragment. */
+    start: HistorySources["start"];
+    /** The end of the text fragment. */
+    end: HistorySources["end"];
+  }
+
+  interface GeneralCacheData extends Base {
+    /** A string indicating the source of the association's text. */
+    source: Exclude<AssociationSources, "history">;
+  }
 }
+
+type StateEngineCacheData = CacheData.HistoryCacheData | CacheData.GeneralCacheData;
 
 interface StateDataCache {
   /** The phase this cache was recorded for. */
   phase: AIDData["phase"];
   /** Entries for `state.memory.context` injection. */
-  forContextMemory: StateEngineCacheData[];
+  forContextMemory: CacheData.GeneralCacheData[];
   /** An entry for `state.memory.frontMemory` injection. */
-  forFrontMemory: StateEngineCacheData | null;
+  forFrontMemory: CacheData.GeneralCacheData | null;
   /** An entry for `state.memory.authorsNote` injection. */
-  forAuthorsNote: StateEngineCacheData | null;
+  forAuthorsNote: CacheData.GeneralCacheData | null;
   /**
-   * Entries associated with `history` entries.
-   * - `key` - An offset from the current history entry.
-   *   - A value of `0` indicates the current `text`.
-   *   - A value like `1` indicates `history[history.length - 1]`.
-   * - `value` - A `StateEngineCacheData` with information about the entry that
-   *   was associated.
+   * Entries associated with `history` entries.  Check `start.source` and `end.source`
+   * to determine which history entries its associated with.  These values are offsets
+   * from the end of the `history` array.
    */
-  forHistory: Record<number, StateEngineCacheData>;
+  forHistory: CacheData.HistoryCacheData[];
 };
 
 type ValuationStats = { matched: number, bonus: number, scalar: number };
@@ -258,8 +355,8 @@ interface SortableEntry {
   text?: string;
   topics?: Set<string>;
   relations?: StateEngineData["relations"];
-  priority?: StateEngineCacheData["priority"];
-  score?: StateEngineCacheData["score"];
+  priority?: CacheData.Base["priority"];
+  score?: CacheData.Base["score"];
 }
 
 /** An interface describing the sorting position of an entry. */
@@ -274,44 +371,9 @@ interface Context {
   entriesMap: Record<string, StateEngineEntry>;
   validationIssues: Map<string, string[]>;
   sortedStateMatchers: import("./MatchableEntry").MatchableEntry[];
-  workingHistory: HistoryIteratorResult[];
+  workingHistory: Map<number, HistoryIteratorResult>;
   stateAssociations: StateAssociations;
   scoresMap: ScoresMap;
-}
-
-interface HistorySources {
-  /**
-   * A map from an entry's original offset to its original entry.
-   * Will contain more than one entry when multiple entries were combined.
-   */
-  readonly entries: Map<number, HistoryEntry>;
-
-  /** A set of types that collectively make up the result. */
-  readonly types: Set<HistoryEntry["type"]>;
-}
-
-interface HistoryIteratorResult {
-  /** An object containing information on the origins of this result. */
-  readonly sources: HistorySources;
-
-  /** The emitted offset for this entry.  Use this for sorting purposes. */
-  readonly offset: number;
-
-  /**
-   * One offset from the `histories` array that should be used to represent
-   * the combined entry.  For instance, if joining paragraphs together,
-   * this might be the offset of the original entry that started the paragraph.
-   */
-  readonly origin: number;
-
-  /**
-   * The type of history entry.  This could be `HistoryEntry["type"]` but is
-   * left open in case things get more complicated.
-   */
-  readonly type: string;
-
-  /** The text for this entry. */
-  readonly text: string;
 }
 
 declare interface GameState {

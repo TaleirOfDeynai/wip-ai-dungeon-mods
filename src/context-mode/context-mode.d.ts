@@ -5,12 +5,23 @@ interface ContextModeModule {
   output?: BundledModifierFn;
 }
 
-interface ContextData extends StateEngineData, StateEngineCacheData {
-  /** The entry's text. */
-  text: string;
-  /** The entry's topics. */
-  topics: Set<string>;
+namespace ContextData {
+  interface GeneralData extends StateEngineData, CacheData.GeneralCacheData {
+    /** The entry's text. */
+    text: string;
+    /** The entry's topics. */
+    topics: Set<string>;
+  }
+
+  interface HistoryData extends StateEngineData, CacheData.HistoryCacheData {
+    /** The entry's text. */
+    text: string;
+    /** The entry's topics. */
+    topics: Set<string>;
+  }
 }
+
+type ContextData = ContextData.HistoryData | ContextData.GeneralData;
 
 interface HistoryData {
   /**

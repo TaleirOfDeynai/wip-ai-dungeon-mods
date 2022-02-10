@@ -2,6 +2,36 @@ const { toPairs, fromPairs, chain } = require("../../utils");
 const { entrySorter } = require("../entrySorting");
 
 /**
+ * @param {Context} ctx
+ * @param {AssociationData.GeneralAssociationData} theAssociation
+ * @returns {CacheData.GeneralCacheData}
+ */
+const buildForGeneral = (ctx, theAssociation) => {
+  const entry = theAssociation.entry;
+  const entryId = entry.entryId;
+  const score = ctx.scoresMap.get(theAssociation.source)?.get(entryId) ?? 0;
+  const priority = entry.priority ?? null;
+  return { entryId, score, priority, source: theAssociation.source };
+};
+
+/**
+ * @param {Context} ctx
+ * @param {AssociationData.HistoryAssociationData} theAssociation
+ * @returns {CacheData.HistoryCacheData}
+ */
+const buildForHistory = (ctx, theAssociation) => {
+  const entry = theAssociation.entry;
+  const entryId = entry.entryId;
+  const score = ctx.scoresMap.get(theAssociation.source)?.get(entryId) ?? 0;
+  const priority = entry.priority ?? null;
+  const { desc, start, end } = theAssociation;
+  return {
+    entryId, score, priority, desc, start, end,
+    source: "history"
+  };
+};
+
+/**
  * Dumps everything into the game-state caches.
  * 
  * @type {BundledModifierFn}
@@ -16,28 +46,24 @@ module.exports = (data) => {
     forContextMemory: [],
     forFrontMemory: null,
     forAuthorsNote: null,
-    forHistory: {}
+    forHistory: []
   };
-  for (const [source, theSet] of ctx.stateAssociations) {
-    for (const id of theSet) {
-      const entry = ctx.entriesMap[id];
-      const score = ctx.scoresMap.get(source)?.get(id) ?? 0;
-      const priority = entry.priority ?? null;
-      const entryData = { entryId: id, score, priority, source };
-      switch (source) {
+  for (const theMap of ctx.stateAssociations.values()) {
+    for (const theAssociation of theMap.values()) {
+      switch (theAssociation.source) {
         case "implicit":
         case "implicitRef":
         case "playerMemory":
-          newCacheData.forContextMemory.push(entryData);
+          newCacheData.forContextMemory.push(buildForGeneral(ctx, theAssociation));
           break;
         case "frontMemory":
-          newCacheData.forFrontMemory = entryData;
+          newCacheData.forFrontMemory = buildForGeneral(ctx, theAssociation);
           break;
         case "authorsNote":
-          newCacheData.forAuthorsNote = entryData;
+          newCacheData.forAuthorsNote = buildForGeneral(ctx, theAssociation);
           break;
         default:
-          newCacheData.forHistory[source] = entryData;
+          newCacheData.forHistory.push(buildForHistory(ctx, theAssociation));
           break;
       }
     }

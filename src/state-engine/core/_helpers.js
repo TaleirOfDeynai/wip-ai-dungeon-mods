@@ -1,20 +1,46 @@
-const { shutUpTS, dew, tuple2, tuple3 } = require("../../utils");
-const { mapIter, iterArray, toPairs, fromPairs, chain } = require("../../utils");
+const { shutUpTS, dew, is, tuple2, tuple3 } = require("../../utils");
+const { mapIter, toPairs, fromPairs, chain } = require("../../utils");
 
-/** @type {import("./types").GetAssociationSet} */
-exports.getAssociationSet = dew(() => {
+/** @type {TypePredicate<AssociationParamTypes["history"]>} */
+const isForHistory = (params) => is.number(params.source);
+
+/**
+ * Helper to create the association data that tracks things.
+ * 
+ * @param {MatchableEntry} matcher
+ * @param {FlatAssociationParams} params
+ * @returns {AssociationData}
+ */
+exports.createAssocData = (matcher, params) => {
+  if (isForHistory(params)) {
+    const { source, entry } = params;
+    const { desc, sources } = entry;
+    const { start, end } = sources;
+    return {
+      entry: matcher.stateEntry,
+      source, desc, start, end
+    };
+  }
+  else {
+    const { source } = params;
+    return { entry: matcher.stateEntry, source };
+  }
+};
+
+/** @type {import("./types").GetAssociationsForFn} */
+exports.getAssociationsFor = dew(() => {
   /**
    * @param {Context} ctx
    * @param {AssociationSources} source
    * @param {boolean} [create]
-   * @returns {Maybe<Set<StateEngineEntry["entryId"]>>}
+   * @returns {Maybe<EntryToAssociationMap>}
    */
   const impl = (ctx, source, create = false) => {
-    let theSet = ctx.stateAssociations.get(source);
-    if (theSet || !create) return theSet;
-    theSet = new Set();
-    ctx.stateAssociations.set(source, theSet);
-    return theSet;
+    let innerMap = ctx.stateAssociations.get(source);
+    if (innerMap || !create) return innerMap;
+    innerMap = new Map();
+    ctx.stateAssociations.set(source, innerMap);
+    return innerMap;
   };
 
   return shutUpTS(impl);
@@ -46,7 +72,7 @@ exports.associationsHelper = function* (data, usedTopics) {
   for (const matcher of ctx.sortedStateMatchers) {
     if (!matcher.targetSources.has("implicitRef")) continue;
 
-    for (const includedId of exports.getAssociationSet(ctx, "implicit", true)) {
+    for (const includedId of exports.getAssociationsFor(ctx, "implicit", true).keys()) {
       if (matcher.entryId === includedId) continue;
       const otherEntry = ctx.entriesMap[includedId];
       yield [matcher, { source: "implicitRef", entry: otherEntry }];
@@ -54,10 +80,10 @@ exports.associationsHelper = function* (data, usedTopics) {
   }
 
   // Now we'll do the actual history texts.
-  for (const historyEntry of ctx.workingHistory)
+  for (const [offset, historyEntry] of ctx.workingHistory)
     for (const matcher of ctx.sortedStateMatchers)
       if (matcher.targetSources.has("history"))
-        yield [matcher, { source: historyEntry.origin, entry: historyEntry, usedTopics }];
+        yield [matcher, { source: offset, entry: historyEntry, usedTopics }];
 };
 
 exports.makePreRuleIterators = dew(() => {
@@ -68,9 +94,9 @@ exports.makePreRuleIterators = dew(() => {
    * @returns {(source: AssociationSources) => Iterable<PreRuleIteratorResult>}
    */
   const makeRuleIterator = (ctx) => function* (source) {
-    const ids = exports.getAssociationSet(ctx, source);
-    if (!ids) return;
-    for (const id of ids) yield tuple2(ctx.entriesMap[id], source);
+    const associations = exports.getAssociationsFor(ctx, source);
+    if (!associations) return;
+    for (const id of associations.keys()) yield tuple2(ctx.entriesMap[id], source);
   };
 
   /**

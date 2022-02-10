@@ -35,10 +35,11 @@ const convertPlayerMemory = function* (playerMemory) {
  */
 const produceContextMemory = (playerMemory, cacheData, getEntryData) => {
   const forContext = cacheData?.forContextMemory ?? [];
-  const forHistory = cacheData?.forHistory ? Object.values(cacheData.forHistory) : [];
+  const forHistory = cacheData?.forHistory ?? [];
 
   return chain()
-    .concat(forContext, forHistory)
+    .concat(forContext)
+    .concat(forHistory)
     .map((entry) => ({ ...entry, ...getEntryData(entry.entryId)}))
     .concat(convertPlayerMemory(playerMemory))
     .thru(entrySorter)

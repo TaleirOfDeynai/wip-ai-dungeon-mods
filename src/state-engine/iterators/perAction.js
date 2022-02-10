@@ -1,4 +1,4 @@
-const { callOnce, chain, iterReverse, iterPosition } = require("../../utils");
+const { chain, iterReverse, iterPosition } = require("../../utils");
 
 const $$entry = Symbol("ActionIteratorResult.entry");
 const $$sources = Symbol("ActionIteratorResult.sources");
@@ -13,17 +13,18 @@ class ActionIteratorResult {
    */
   constructor(offset, entry) {
     this[$$entry] = entry;
-    this[$$sources] = callOnce(() => ({
+    this[$$sources] = {
       entries: new Map([[offset, entry]]),
-      types: new Set([entry.type])
-    }));
+      types: new Set([entry.type]),
+      start: { source: offset, offset: 0 },
+      end: { source: offset, offset: 0 }
+    };
 
     this.offset = offset;
-    this.origin = offset;
   }
 
   get sources() {
-    return this[$$sources]();
+    return this[$$sources];
   }
 
   get type() {
@@ -32,6 +33,10 @@ class ActionIteratorResult {
 
   get text() {
     return this[$$entry].text;
+  }
+
+  get desc() {
+    return `Action ${this.offset}`;
   }
 }
 

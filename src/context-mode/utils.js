@@ -1,6 +1,6 @@
 /// <reference path="../state-engine/state-engine.d.ts" />
-const { dew, toPairs, fromPairs, tuple2, getEntryText } = require("../utils");
-const { chain, iterReverse } = require("../utils");
+const { dew, getEntryText } = require("../utils");
+const { iterReverse } = require("../utils");
 const turnCache = require("../turn-cache");
 
 /**
@@ -23,15 +23,18 @@ exports.getClosestCache = (aidData) => {
 
   // We can shift this entry to make it usable.
   const theShift = actionCount - fromTurn;
-  const newHistory = chain(toPairs(storage.forHistory))
-    .map(([key, data]) => {
-      const newTurn = Number(key) + theShift;
-      const newData
-        = typeof data.source !== "number" ? data
-        : { ...data, source: data.source + theShift };
-      return tuple2(newTurn, newData);
-    })
-    .value((kvps) => fromPairs(kvps));
+  const newHistory = storage.forHistory.map((data) => {
+    // Sanity check.
+    if (data.source !== "history") return data;
+
+    const newStart = data.start.source + theShift;
+    const newEnd = data.end.source + theShift;
+    return {
+      ...data,
+      start: { ...data.start, source: newStart },
+      end: { ...data.end, source: newEnd }
+    };
+  });
   return { ...storage, forHistory: newHistory };
 };
 
@@ -70,8 +73,7 @@ exports.getStateEngineData = (aidData, assocData) => {
   // Pass this up if we have no text; it's not useful for context construction.
   if (!text) return undefined;
 
-  const { score, priority, source } = assocData;
-  return { ...restData, topics, score, priority, source, text };
+  return { ...restData, ...assocData, topics, text };
 };
 
 /**
