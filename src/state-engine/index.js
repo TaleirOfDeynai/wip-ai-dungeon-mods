@@ -2,12 +2,14 @@
 /// <reference path="../commands/commands.d.ts" />
 const { Plugin } = require("aid-bundler");
 const { MatchCommand } = require("../commands");
-const { flatMap, iterReverse, chain, toPairs, fromPairs, tuple2, getEntryText } = require("../utils");
+const { is, flatMap, iterReverse, chain, fromPairs, tuple2, getEntryText } = require("../utils");
 const { makeExcerpt, stateDataString } = require("./utils");
 const { stateModule: coreModule } = require("./core");
 const { stateModule: vanillaModule } = require("./standard/vanilla");
 const { stateModule: classModule } = require("./standard/class");
 const turnCache = require("../turn-cache");
+
+const STATE_ENGINE_VERSION = 5;
 
 /**
  * Orders `CacheData.HistoryCacheData` by:
@@ -42,6 +44,23 @@ const historyEntrySorter = (a, b) => {
   return b.start.offset - a.start.offset;
 };
 
+/** @type {BundledModifierFn} */
+const versionCheck = (data) => {
+  const curVer = data.state.$$stateEngineVersion;
+  if (curVer === STATE_ENGINE_VERSION) return;
+
+  // Reset State Engine on version change.
+  delete data.state.$$stateDataCache;
+  turnCache.clearCache(data, "StateEngine.association");
+  data.state.$$stateEngineVersion = STATE_ENGINE_VERSION;
+
+  console.log([
+    `Cleared State Engine caches due to upgrade`,
+    is.number(curVer) ? `from ${curVer}` : undefined,
+    `to ${STATE_ENGINE_VERSION}.`
+  ].filter(Boolean).join(" "));
+};
+
 /**
  * Constructs an input modifier from the given list of `StateModule` instances.
  * 
@@ -61,6 +80,7 @@ exports.mainModifier = (...stateModules) => {
 
   return (data) => {
     if (!data.useAI) return;
+    versionCheck(data);
 
     for (const modifierFn of modifierFns) {
       modifierFn(data);
@@ -164,7 +184,7 @@ exports.commands = [
 exports.addPlugin = (pipeline, ...stateModules) => {
   for (const cmd of exports.commands)
     pipeline.commandHandler.addCommand(cmd);
-  
-  const theModifier = exports.mainModifier(...stateModules);
-  pipeline.addPlugin(new Plugin("State Engine", undefined, theModifier, undefined));
+
+  const contextModifier = exports.mainModifier(...stateModules);
+  pipeline.addPlugin(new Plugin("State Engine", versionCheck, contextModifier, undefined));
 };

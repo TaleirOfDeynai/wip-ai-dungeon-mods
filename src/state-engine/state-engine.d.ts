@@ -377,6 +377,7 @@ interface Context {
 }
 
 declare interface GameState {
+  $$stateEngineVersion?: number;
   /**
    * A cache of pre-processed `StateEngineData` entries.
    */
