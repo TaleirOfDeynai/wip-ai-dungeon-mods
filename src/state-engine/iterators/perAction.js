@@ -1,4 +1,5 @@
-const { chain, iterReverse, iterPosition } = require("../../utils");
+const { chain } = require("../../utils");
+const { makeHistoryIterator } = require("./_helpers");
 
 const $$entry = Symbol("ActionIteratorResult.entry");
 const $$sources = Symbol("ActionIteratorResult.sources");
@@ -48,8 +49,7 @@ class ActionIteratorResult {
  * The array of historical actions.
  * @returns {Iterable<ActionIteratorResult>}
  */
-const actionIterator = (history) => chain(iterReverse(history))
-  .thru(iterPosition)
+const actionIterator = (history) => chain(makeHistoryIterator(history))
   .map(([offset, history]) => new ActionIteratorResult(offset, history))
   .value();
 
