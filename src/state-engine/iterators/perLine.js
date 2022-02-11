@@ -1,7 +1,7 @@
 const { is } = require("../../utils");
 const { makeHistoryIterator, extractTextFragment } = require("./_helpers");
 
-const $$sources = Symbol("ActionIteratorResult.sources");
+const $$sources = Symbol("ByLineIteratorResult.sources");
 
 /**
  * Matches a string containing at least two lines.
