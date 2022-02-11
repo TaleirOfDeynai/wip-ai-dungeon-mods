@@ -70,14 +70,15 @@ exports.commands = [
  * 
  * @param {import("aid-bundler").Pipeline} pipeline
  * The `Pipeline` to add to.
- * @param {...ContextModeModule} contextModeModules
+ * @param {Object} [config]
+ * @param {ContextModeModule[]} [config.modules]
  * The context-mode modules to enable.
  */
-exports.addPlugin = (pipeline, ...contextModeModules) => {
+exports.addPlugin = (pipeline, config) => {
   // No reason to even bother if there's no modules to use.
-  if (contextModeModules.length === 0) return;
+  if (!config?.modules?.length) return;
 
-  for (const module of contextModeModules) {
+  for (const module of config.modules) {
     if (!module.name)
       throw new Error("All Context-Mode modules must have a `name`.");
 

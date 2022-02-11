@@ -1,5 +1,4 @@
 const { dew, escapeRegExp, chain, take, tuple2 } = require("../../utils");
-const actionIterator = require("../iterators/perAction");
 
 /**
  * @param {StateEngineEntry} source
@@ -84,7 +83,7 @@ module.exports = (data) => {
   });
 
   ctx.workingHistory = chain(extraEntry ? [...history, extraEntry] : history)
-    .thru(actionIterator)
+    .thru(data.historyIterator)
     .thru((entries) => take(entries, entryCount))
     .map((entry) => tuple2(entry.offset, entry))
     .value((entries) => new Map([...entries].reverse()));

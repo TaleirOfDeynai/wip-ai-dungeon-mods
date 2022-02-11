@@ -10,6 +10,7 @@ const totalRecall = require("./total-recall");
 const contextMode = require("./context-mode");
 const commonModes = require("./common-context-modes");
 const annotatedMode = require("./annotated-context-mode");
+const perLineIterator = require("./state-engine/iterators/perLine");
 
 const pipeline = new Pipeline();
 
@@ -109,18 +110,21 @@ authorsManual.addPlugin(pipeline);
 
 configCommander.addPlugin(pipeline);
 
-stateEngine.addPlugin(
-  pipeline,
-  deepState.stateModule,
-  director.stateModule,
-  totalRecall.stateModule
-);
+stateEngine.addPlugin(pipeline, {
+  historyIterator: perLineIterator,
+  modules: [
+    deepState.stateModule,
+    director.stateModule,
+    totalRecall.stateModule
+  ]
+});
 
-contextMode.addPlugin(
-  pipeline,
-  annotatedMode.contextModeModule,
-  commonModes.forwardModule,
-  commonModes.narratorModule
-);
+contextMode.addPlugin(pipeline, {
+  modules: [
+    annotatedMode.contextModeModule,
+    commonModes.forwardModule,
+    commonModes.narratorModule
+  ]
+});
 
 pipeline.build();

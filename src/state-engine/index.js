@@ -7,6 +7,7 @@ const { makeExcerpt, stateDataString } = require("./utils");
 const { stateModule: coreModule } = require("./core");
 const { stateModule: vanillaModule } = require("./standard/vanilla");
 const { stateModule: classModule } = require("./standard/class");
+const perLineIterator = require("./iterators/perLine");
 const turnCache = require("../turn-cache");
 
 const STATE_ENGINE_VERSION = 5;
@@ -64,10 +65,11 @@ const versionCheck = (data) => {
 /**
  * Constructs an input modifier from the given list of `StateModule` instances.
  * 
+ * @param {HistoryIteratorFn} historyIterator
  * @param {...StateModule} stateModules
  * @returns {BundledModifierFn}
  */
-exports.mainModifier = (...stateModules) => {
+exports.mainModifier = (historyIterator, ...stateModules) => {
   // Make sure the core module comes first, even if it was already in `stateModules`.
   // We also throw in the vanilla module, for backward compatibility.
   const theModules = new Set([coreModule, vanillaModule, classModule, ...stateModules]);
@@ -80,7 +82,11 @@ exports.mainModifier = (...stateModules) => {
 
   return (data) => {
     if (!data.useAI) return;
-    versionCheck(data);
+    // Set the history iterator.
+    data.historyIterator = historyIterator;
+
+    // Check to make sure the cache doesn't need busting.
+    versionCheck(data);    
 
     for (const modifierFn of modifierFns) {
       modifierFn(data);
@@ -178,13 +184,17 @@ exports.commands = [
 /**
  * Creates and adds this plugin to an AID-Bundler `Pipeline`.
  * 
- * @param {import("aid-bundler").Pipeline} pipeline 
- * @param  {...any} stateModules 
+ * @param {import("aid-bundler").Pipeline} pipeline
+ * @param {Object} [config]
+ * @param {StateModule[]} [config.modules]
+ * @param {HistoryIteratorFn} [config.historyIterator]
  */
-exports.addPlugin = (pipeline, ...stateModules) => {
+exports.addPlugin = (pipeline, config) => {
   for (const cmd of exports.commands)
     pipeline.commandHandler.addCommand(cmd);
 
-  const contextModifier = exports.mainModifier(...stateModules);
+  const historyIterator = config?.historyIterator ?? perLineIterator;
+  const stateModules = config?.modules ?? [];
+  const contextModifier = exports.mainModifier(historyIterator, ...stateModules);
   pipeline.addPlugin(new Plugin("State Engine", versionCheck, contextModifier, undefined));
 };

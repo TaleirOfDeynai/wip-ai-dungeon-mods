@@ -189,6 +189,12 @@ interface HistoryIteratorResult {
   readonly desc: string;
 }
 
+/**
+ * A function that iterates on the history and provides results suited for
+ * {@link Context.workingHistory}.
+ */
+type HistoryIteratorFn = (history: Iterable<HistoryEntry>) => Iterable<HistoryIteratorResult>;
+
 namespace AssociationData {
   interface Base {
     /** The entry. */
@@ -387,5 +393,6 @@ declare interface GameState {
 declare module "aid-bundler/src/aidData" {
   interface AIDData {
     stateEngineContext: Context;
+    historyIterator: HistoryIteratorFn;
   }
 }
