@@ -2,6 +2,8 @@
 const { dew, getEntryText } = require("../utils");
 const { iterReverse } = require("../utils");
 const turnCache = require("../turn-cache");
+const perLineIterator = require("../state-engine/iterators/perLine");
+const { WrappedIteratorResult } = require("../state-engine/iterators/_helpers");
 
 /**
  * Gets the nearest association cache object for the current turn.  If an exact
@@ -91,76 +93,42 @@ exports.cleanText = (text) => {
     .filter(Boolean);
 };
 
-/** Matches any string that appears to start with a new line. */
-const reNewLine = /^\s*?\n/;
+const $$text = Symbol("WrappedIteratorResult.text");
 
-/**
- * Attempts to create a `HistoryData` object from the given information.
- * 
- * @param {number} offset 
- * @param {HistoryData["sources"]} sources 
- * @param {number} totalLength
- * @param {string[]} textParts 
- * @returns {Maybe<HistoryData>}
- */
-const createHistoryData = (offset, sources, totalLength, textParts) => {
-  if (textParts.length === 0 || sources.size === 0) return undefined;
-  const text = exports.cleanText(textParts.join("")).join("\n");
-  if (!text) return undefined;
-
-  // We can preserve the type if only one type is in the whole batch.
-  // This can happen if the player happens to hit "continue" a lot.
-  const rawSources = [...sources.values()];
-  const baseType = rawSources[0].type;
-  const type = rawSources.every(({ type }) => type === baseType) ? baseType : "combined";
-  // Only add the extra character (for a new-line) if this isn't the latest entry.
-  const lengthToHere = totalLength <= 0 ? text.length : totalLength + text.length + 1;
-  return { offset, sources, type, lengthToHere, text };
-};
-
-/**
- * Reformats the history entries, combining them into a single entry when the
- * AI continued from the previous entry (IE: it did not start a new paragraph).
- * 
- * This function will iterate in reverse, so the entry with an `offset` of `0`
- * is the very latest entry in the history.
- * 
- * @param {import("aid-bundler/src/aidData").AIDData} aidData
- * @returns {Iterable<HistoryData>}
- */
-exports.buildHistoryData = function* (aidData) {
-  let nextYield = 0;
-  let curOffset = 0;
-  /** @type {HistoryData["sources"]} */
-  let sources = new Map();
-  /** @type {string[]} */
-  let textInProgress = [];
-  let totalLength = 0;
-  for (const entry of iterReverse(aidData.history)) {
-    const curText = entry.text;
-
-    // No trimming or anything.  Just put it in as-is.
-    textInProgress.push(curText);
-    sources.set(curOffset, entry);
-    curOffset += 1;
-
-    if (reNewLine.test(curText)) {
-      // We need to yield the next batch, if there's something to yield.
-      // Don't forget, we're iterating in reverse, so make sure the parts are un-reversed.
-      const nextData = createHistoryData(nextYield, sources, totalLength, textInProgress.reverse());
-      if (nextData) {
-        yield nextData;
-        totalLength = nextData.lengthToHere;
-        nextYield += 1;
-      }
-      textInProgress = [];
-      sources = new Map();
-    }
+class ContextModeIteratorResult extends WrappedIteratorResult {
+  /**
+   * @param {HistoryIteratorResult} toWrap
+   * @param {number} totalLength
+   */
+  constructor(toWrap, totalLength) {
+    super(toWrap);
+    this[$$text] = exports.cleanText(toWrap.text).join("\n");
+    // Only add the extra character (for a new-line) if this isn't the latest entry.
+    const declaredLength = toWrap.offset === 0 ? this[$$text].length : this[$$text].length + 1;
+    this.lengthToHere = totalLength + declaredLength;
   }
 
-  // Before we leave, make sure we yield the last bit of text.
-  const nextData = createHistoryData(nextYield, sources, totalLength, textInProgress.reverse());
-  if (nextData) yield nextData;
+  /** This wrapper yields cleaned up text. */
+  get text() {
+    return this[$$text];
+  }
+}
+
+/**
+ * Applies a view on the history that yields each line individually and adds some
+ * additional information to aid context building.
+ * 
+ * @param {import("aid-bundler/src/aidData").AIDData} aidData
+ * @returns {Iterable<ContextModeIteratorResult>}
+ */
+exports.buildHistoryData = function* (aidData) {
+  let totalLength = 0;
+  for (const line of perLineIterator(aidData.history)) {
+    const result = new ContextModeIteratorResult(line, totalLength);
+    if (result.text.length === 0) continue;
+    totalLength = result.lengthToHere;
+    yield result;
+  }
 };
 
 /**

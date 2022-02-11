@@ -28,7 +28,7 @@ const contextModifier = (data) => {
     .toArray();
   
   // Compile a set of history sources, so we know (roughly) how far back we can look.
-  const historySources = new Set(chain(historyData).map((hd) => hd.sources.keys()).flatten().value());
+  const historySources = new Set(chain(historyData).map((hd) => hd.sources.entries.keys()).flatten().value());
 
   const styleText = dew(() => {
     if (!authorsNote) return [];
@@ -92,11 +92,11 @@ const contextModifier = (data) => {
   const notesLength = joinedLength(notesText);
 
   const storyText = dew(() => {
+    // This comes in front of the history we emit.
     const theFrontMemory = cleanText(frontMemory).reverse();
     return chain(theFrontMemory)
       .concat(historyData)
       .map(getText)
-      .map((s) => s.trim())
       .filter(Boolean)
       .thru((storyText) => limitText(
         storyText,
