@@ -63,3 +63,42 @@ exports.extractTextFragment = (theSources) => {
  * @returns {Iterable<[number, HistoryEntry]>}
  */
 exports.makeHistoryIterator = (history) => chain(history).thru(iterReverse).thru(iterPosition).value();
+
+const $$toWrap = Symbol("WrappedIteratorResult.toWrap");
+
+/**
+ * A class that can act as a base for some simple transformation on an existing
+ * `HistoryIteratorResult` object.
+ * 
+ * @implements {HistoryIteratorResult}
+ */
+class WrappedIteratorResult {
+  /**
+   * @param {HistoryIteratorResult} toWrap
+   */
+  constructor(toWrap) {
+    this.wrappedResult = toWrap;
+  }
+
+  get offset() {
+    return this.wrappedResult.offset;
+  }
+
+  get sources() {
+    return this.wrappedResult.sources;
+  }
+
+  get type() {
+    return this.wrappedResult.type;
+  }
+
+  get text() {
+    return this.wrappedResult.text;
+  }
+
+  get desc() {
+    return this.wrappedResult.desc;
+  }
+}
+
+exports.WrappedIteratorResult = WrappedIteratorResult;
