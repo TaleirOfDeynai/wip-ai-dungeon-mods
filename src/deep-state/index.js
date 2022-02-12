@@ -34,7 +34,6 @@ const implicitInclusionDiceSides = 20;
  */
 const init = (data) => {
   const { EngineEntryForWorldInfo } = require("../state-engine/EngineEntryForWorldInfo");
-  const { makeComparable } = require("../stemming/ComparableEntryMixin");
   const { isExclusiveKeyword, isNegatedRelation } = require("../state-engine/parsers/checks");
 
   const { info } = data;
@@ -247,7 +246,7 @@ const init = (data) => {
     }
   }
 
-  class LoreEntry extends makeComparable(data, EngineEntryForWorldInfo) {
+  class LoreEntry extends EngineEntryForWorldInfo {
     /**
      * @param {WorldInfoEntry} worldInfo
      * @param {Context["config"]} config
@@ -376,7 +375,7 @@ const init = (data) => {
     }
   }
 
-  class StateEntry extends makeComparable(data, EngineEntryForWorldInfo) {
+  class StateEntry extends EngineEntryForWorldInfo {
     static get forType() { return "State"; }
     get targetSources() { return tuple("history"); }
 

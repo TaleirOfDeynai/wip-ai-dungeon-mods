@@ -6,7 +6,6 @@ const configCommander = require("./config-commander");
 const stateEngine = require("./state-engine");
 const deepState = require("./deep-state");
 const director = require("./director");
-const totalRecall = require("./total-recall");
 const contextMode = require("./context-mode");
 const commonModes = require("./common-context-modes");
 const annotatedMode = require("./annotated-context-mode");
@@ -114,8 +113,7 @@ stateEngine.addPlugin(pipeline, {
   historyIterator: perLineIterator,
   modules: [
     deepState.stateModule,
-    director.stateModule,
-    totalRecall.stateModule
+    director.stateModule
   ]
 });
 
