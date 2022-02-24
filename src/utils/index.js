@@ -552,6 +552,42 @@ exports.callOnce = (fn) => {
 };
 
 /**
+ * Wraps the given `iterable` in another iterable which will cache its yields and
+ * "replay" from that cache each time a new iterator is called upon.  The wrapped
+ * iterable is iterated through lazily and only once, at most.
+ * 
+ * Basically, this is `memoize` for generator functions.
+ * 
+ * @template T
+ * @param {Iterable<T>} iterable
+ * @return {Iterable<T>}
+ */
+exports.replay = (iterable) => {
+  /** @type {T[]} */
+  const elements = [];
+  const iterator = iterable[Symbol.iterator]();
+  return {
+    [Symbol.iterator]: function*() {
+      yield* elements;
+      for (let n = iterator.next(); !n.done; n = iterator.next()) {
+        elements.push(n.value);
+        yield n.value;
+      }
+    }
+  };
+};
+
+/**
+ * A helper to both memoize a given arity-1 generator function AND make it replayable.
+ * 
+ * @template TIn
+ * @template TOut
+ * @param {(arg: TIn) => Iterable<TOut>} genFn
+ * @returns {(arg: TIn) => Iterable<TOut>}
+ */
+exports.memoizeGenerator = (genFn) => exports.memoize((arg) => exports.replay(genFn(arg)));
+
+/**
  * Default `lengthGetter` for `limitText`.
  * 
  * @param {unknown} value 

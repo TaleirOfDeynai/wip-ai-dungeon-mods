@@ -69,7 +69,13 @@ module.exports = (data) => {
   const { stateEngineContext: ctx, history } = data;
   const entryCount = ctx.config.get("integer", "entryCount");
 
-  /** @type {HistoryEntry | undefined} */
+  /**
+   * All this is a bit of an artifact from when this ran only during both the
+   * input and output phases (but not the context phase).  Keeping it around in
+   * case it is ever relevant again.
+   * 
+   * @type {HistoryEntry | undefined}
+   */
   const extraEntry = dew(() => {
     switch (data.phase) {
       // We don't know what the input mode was, so we have to parse it.
@@ -82,6 +88,10 @@ module.exports = (data) => {
     return undefined;
   });
 
+  // `data.historyIterator` is memoized, which means if we have `extraEntry`,
+  // we're going to break the optimization available there.  At the moment,
+  // I don't care since we now only run in the context phase, but I'm noting
+  // this in case my level-of-caring shifts in the future.
   ctx.workingHistory = chain(extraEntry ? [...history, extraEntry] : history)
     .thru(data.historyIterator)
     .thru((entries) => take(entries, entryCount))
