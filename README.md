@@ -537,6 +537,11 @@ A utility module that provides per-action caching capabilities.
 ### Events
 A utility module providing an event emitter.
 
+### Action-Ident
+A utility module for converting entries in the `history` array to and from their absolute turn number.
+
+This essentially allows you to derive a unique ID for an action, even if that action is not currently stored in the `history`, because AI Dungeon only provided the last 200 story actions to the script.  It handles some complexities involved in the current phase of the script's execution (`input`, `context`, or `output`) and whether or not the `input` phase was skipped (where `history` may or may not contain an entry for the input phase's `text` result).
+
 ### Stemming
 A utility that provides a Lancaster word stemmer and TF-IDF capability for comparing and querying all the text currently in context.
 

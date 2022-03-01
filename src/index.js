@@ -1,6 +1,7 @@
 const { Pipeline } = require("aid-bundler");
 const { SimpleCommand } = require("./commands");
 const { shutUpTS } = require("./utils");
+const actionIdent = require("./action-ident");
 const authorsManual = require("./authors-manual");
 const configCommander = require("./config-commander");
 const stateEngine = require("./state-engine");
@@ -100,6 +101,8 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
     return JSON.stringify(texts, undefined, 2);
   })
 );
+
+actionIdent.addPlugin(pipeline);
 
 authorsManual.addPlugin(pipeline);
 
