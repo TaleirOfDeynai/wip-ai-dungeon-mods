@@ -1,7 +1,7 @@
 /// <reference path="../state-engine/state-engine.d.ts" />
 const { dew, getEntryText } = require("../utils");
-const { iterReverse } = require("../utils");
 const turnCache = require("../turn-cache");
+const { dataFromCache } = require("../state-engine/utils");
 const perLineIterator = require("../state-engine/iterators/perLine");
 const { WrappedIteratorResult } = require("../state-engine/iterators/_helpers");
 
@@ -51,12 +51,8 @@ exports.getClosestCache = (aidData) => {
 exports.getStateEngineData = (aidData, assocData) => {
   if (assocData == null) return undefined;
 
-  // Does the cache exist?
-  const { $$stateDataCache } = aidData.state;
-  if (!$$stateDataCache) return undefined;
-
   // Can we find this entry's cached data?
-  const stateData = $$stateDataCache[assocData.entryId];
+  const stateData = dataFromCache(aidData, assocData.entryId);
   if (!stateData) return undefined;
   const { topics: topicsArr, ...restData } = stateData;
   const topics = new Set(topicsArr);
