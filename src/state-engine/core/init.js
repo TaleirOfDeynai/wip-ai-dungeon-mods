@@ -12,7 +12,7 @@ const getConfig = require("../config");
     config: getConfig(data),
     matchCounter: memoizedCounter(),
     theCache: turnCache.forWrite(data, "StateEngine.association"),
-    entriesMap: {},
+    entriesMap: new Map(),
     validationIssues: new Map(),
     sortedStateMatchers: [],
     workingHistory: new Map(),

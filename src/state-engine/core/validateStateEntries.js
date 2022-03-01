@@ -8,11 +8,10 @@ const { chain } = require("../../utils");
 module.exports = (data) => {
   const { stateEngineContext: ctx } = data;
 
-  for (const id of Object.keys(ctx.entriesMap)) {
-    const entry = ctx.entriesMap[id];
+  for (const [id, entry] of ctx.entriesMap) {
     const results = entry.validator();
     if (results.length === 0) continue;
-    delete ctx.entriesMap[id];
+    ctx.entriesMap.delete(id);
 
     const renderAs = entry.toString();
     const theIssues = ctx.validationIssues.get(renderAs) ?? [];

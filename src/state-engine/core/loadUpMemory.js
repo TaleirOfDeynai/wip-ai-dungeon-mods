@@ -1,6 +1,8 @@
-const { chain, getText } = require("../../utils");
+const { chain, getText, assertExists } = require("../../utils");
 const { entrySorter } = require("../entrySorting");
 const { entrySelector } = require("../entrySelection");
+
+const MISSING_ENTRY = "Missing entry in \`entriesMap\`!";
 
 /**
  * We are not in a context modifier, so we will assume 1000 characters can be dedicated
@@ -72,7 +74,7 @@ module.exports = (data) => {
   const newContextMem = produceContextMemory(
     playerMemory, cacheData,
     (id) => {
-      const entry = ctx.entriesMap[id];
+      const entry = assertExists(MISSING_ENTRY, ctx.entriesMap.get(id));
       return {
         text: getText(entry),
         topics: entry.topics,
@@ -84,13 +86,13 @@ module.exports = (data) => {
   
   // Only set these if it is not already set by something else.
   if (cacheData.forAuthorsNote) {
-    const entry = ctx.entriesMap[cacheData.forAuthorsNote.entryId];
+    const entry = assertExists(MISSING_ENTRY, ctx.entriesMap.get(cacheData.forAuthorsNote.entryId));
     const newAuthorsNote = getText(entry).trim();
     if (newAuthorsNote) memory.authorsNote = newAuthorsNote;
   }
   
   if (cacheData.forFrontMemory && !memory.frontMemory) {
-    const entry = ctx.entriesMap[cacheData.forFrontMemory.entryId];
+    const entry = assertExists(MISSING_ENTRY, ctx.entriesMap.get(cacheData.forFrontMemory.entryId));
     const newFrontMemory = getText(entry).trim();
     if (newFrontMemory) memory.frontMemory = newFrontMemory;
   }

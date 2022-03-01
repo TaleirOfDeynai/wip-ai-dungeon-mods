@@ -17,12 +17,10 @@ const entryForModifier = (entry) => ({
 module.exports = (data) => {
   const { stateEngineContext: ctx } = data;
 
-  const currentEntries = Object.values(ctx.entriesMap);
-
   // We need to store copies, as `modifier` will mutate instances.
-  const allStates = chain(toPairs(ctx.entriesMap))
+  const allStates = chain(ctx.entriesMap)
     .map(([id, entry]) => tuple2(id, entryForModifier(entry)))
     .value((kvps) => new Map(kvps));
 
-  for (const entry of currentEntries) entry.modifier(allStates);
+  for (const entry of ctx.entriesMap.values()) entry.modifier(allStates);
 };

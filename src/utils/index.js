@@ -28,6 +28,14 @@ exports.assertAs = (msg, checkFn, value) => {
 };
 
 /**
+ * @template T
+ * @param {string} msg 
+ * @param {T} value 
+ * @returns {Exclude<T, undefined | null>}
+ */
+exports.assertExists = (msg, value) => exports.assertAs(msg, exports.isInstance, value);
+
+/**
  * IIFE helper.
  * 
  * @template T

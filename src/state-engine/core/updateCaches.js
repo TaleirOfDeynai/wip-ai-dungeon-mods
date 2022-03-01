@@ -81,7 +81,7 @@ module.exports = (data) => {
 
   // Finally, update the parsed entry cache and we're done!
   // @ts-ignore - Why are you bothering with this, TS?  Stupid!
-  state.$$stateDataCache = chain(toPairs(ctx.entriesMap))
+  state.$$stateDataCache = chain(ctx.entriesMap)
     .map(([k, entry]) => [k, entry.toJSON()])
     .value((kvps) => fromPairs(kvps));
 };

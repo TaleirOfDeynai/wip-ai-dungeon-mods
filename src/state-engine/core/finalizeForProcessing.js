@@ -98,8 +98,7 @@ module.exports = (data) => {
     .map((entry) => tuple2(entry.offset, entry))
     .value((entries) => new Map([...entries].reverse()));
 
-  ctx.sortedStateMatchers = Object.keys(ctx.entriesMap)
-    .map((id) => ctx.entriesMap[id])
+  ctx.sortedStateMatchers = [...ctx.entriesMap.values()]
     .sort(stateSorter)
     .map((sd) => sd.toMatchable(ctx.matchCounter));
 };

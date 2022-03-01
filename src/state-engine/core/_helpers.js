@@ -1,5 +1,7 @@
-const { shutUpTS, dew, is, tuple2, tuple3 } = require("../../utils");
+const { shutUpTS, dew, is, assertExists, tuple2, tuple3 } = require("../../utils");
 const { mapIter, toPairs, fromPairs, chain } = require("../../utils");
+
+const MISSING_ENTRY = "Missing entry in \`entriesMap\`!";
 
 /** @type {TypePredicate<AssociationParamTypes["history"]>} */
 const isForHistory = (params) => is.number(params.source);
@@ -74,7 +76,7 @@ exports.associationsHelper = function* (data, usedTopics) {
 
     for (const includedId of exports.getAssociationsFor(ctx, "implicit", true).keys()) {
       if (matcher.entryId === includedId) continue;
-      const otherEntry = ctx.entriesMap[includedId];
+      const otherEntry = assertExists(MISSING_ENTRY, ctx.entriesMap.get(includedId));
       yield [matcher, { source: "implicitRef", entry: otherEntry }];
     }
   }
@@ -96,7 +98,10 @@ exports.makePreRuleIterators = dew(() => {
   const makeRuleIterator = (ctx) => function* (source) {
     const associations = exports.getAssociationsFor(ctx, source);
     if (!associations) return;
-    for (const id of associations.keys()) yield tuple2(ctx.entriesMap[id], source);
+    for (const id of associations.keys()) {
+      const entry = assertExists(MISSING_ENTRY, ctx.entriesMap.get(id));
+      yield tuple2(entry, source);
+    }
   };
 
   /**

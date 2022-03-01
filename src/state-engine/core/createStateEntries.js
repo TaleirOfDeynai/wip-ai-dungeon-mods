@@ -11,5 +11,5 @@ module.exports = (data) => {
   // Perform entry construction.
   for (const entryClass of allStateEntries())
     for (const newEntry of entryClass.produceEntries(data, ctx))
-      ctx.entriesMap[newEntry.entryId] = newEntry;
+      ctx.entriesMap.set(newEntry.entryId, newEntry);
 };
