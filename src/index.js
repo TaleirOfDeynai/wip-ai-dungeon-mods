@@ -4,11 +4,7 @@ const { shutUpTS } = require("./utils");
 const authorsManual = require("./authors-manual");
 const configCommander = require("./config-commander");
 const stateEngine = require("./state-engine");
-const deepState = require("./deep-state");
-const director = require("./director");
 const contextMode = require("./context-mode");
-const commonModes = require("./common-context-modes");
-const annotatedMode = require("./annotated-context-mode");
 const perLineIterator = require("./state-engine/iterators/perLine");
 
 const pipeline = new Pipeline();
@@ -112,16 +108,16 @@ configCommander.addPlugin(pipeline);
 stateEngine.addPlugin(pipeline, {
   historyIterator: perLineIterator,
   modules: [
-    deepState.stateModule,
-    director.stateModule
+    require("./deep-state").stateModule,
+    require("./director").stateModule
   ]
 });
 
 contextMode.addPlugin(pipeline, {
   modules: [
-    annotatedMode.contextModeModule,
-    commonModes.forwardModule,
-    commonModes.narratorModule
+    require("./annotated-context-mode").contextModeModule,
+    require("./common-context-modes").forwardModule,
+    require("./common-context-modes").narratorModule
   ]
 });
 
