@@ -567,6 +567,30 @@ Events:
 Configuration Options:
 * `events-for-actions.maximumLookBack` as `integer` default `30` - How many entries of `history` should be checked for changes.  Since hashing objects takes some serious time, the number of actions checked each turn is limited by this value.  Only these latest actions will be checked, which are generally the only entries that will be edited by a player.  Changes to entries before the look-back region can still be detected if the story is rewound far enough to bring them into the region.
 
+### Events for World-Info
+A utility module that generates events in response to changes to `worldInfo` entries that occur outside the script's influence.
+
+Events:
+* `events-for-world-info.added` - Emitted when an entry is added to the `worldInfo` array.
+  Callback arguments:
+  * `data: AIDData` - The AID-Bundler data object.
+  * `addedArgs: Object` - An object describing the event; properties are below.
+  * `addedArgs.entry: WorldInfoEntry` - The entry from `worldInfo`.
+  * `addedArgs.currentHash: string` - The calculated hash for the entry's current state.
+* `events-for-world-info.updated` - Emitted when an entry currently in the `worldInfo` array has changed.
+  Callback arguments:
+  * `data: AIDData` - The AID-Bundler data object.
+  * `updatedArgs: Object` - An object describing the event; properties are below.
+  * `updatedArgs.entry: WorldInfoEntry` - The entry from `worldInfo`.
+  * `updatedArgs.currentHash: string` - The calculated hash for the entry's current state.
+  * `updatedArgs.previousHash: string` - The cached hash of the entry from a previous run.
+* `events-for-world-info.removed` - Emitted when an entry previously in the `worldInfo` array was removed.
+  Callback arguments:
+  * `data: AIDData` - The AID-Bundler data object.
+  * `removedArgs: Object` - An object describing the event; properties are below.
+  * `removedArgs.id: string` - The ID of the entry.
+  * `removedArgs.previousHash: string` - The cached hash of the entry from a previous run.
+
 ### Action-Ident
 A utility module for converting entries in the `history` array to and from their absolute turn number.
 

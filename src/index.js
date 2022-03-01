@@ -3,6 +3,7 @@ const { SimpleCommand } = require("./commands");
 const { shutUpTS } = require("./utils");
 const actionIdent = require("./action-ident");
 const eventsForActions = require("./events-for-actions");
+const eventsForWorldInfo = require("./events-for-world-info");
 const authorsManual = require("./authors-manual");
 const configCommander = require("./config-commander");
 const stateEngine = require("./state-engine");
@@ -106,6 +107,8 @@ pipeline.commandHandler.addCommand(new SimpleCommand(
 actionIdent.addPlugin(pipeline);
 
 eventsForActions.addPlugin(pipeline);
+
+eventsForWorldInfo.addPlugin(pipeline);
 
 authorsManual.addPlugin(pipeline);
 
