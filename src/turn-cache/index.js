@@ -1,5 +1,4 @@
 /// <reference path="./turn-cache.d.ts" />
-const { shutUpTS } = require("../utils");
 const { cloneFromStorage, cleanCache } = require("./utils");
 
 const $name = Symbol("TurnCache.name");
