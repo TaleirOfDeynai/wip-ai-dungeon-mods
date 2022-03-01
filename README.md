@@ -537,6 +537,36 @@ A utility module that provides per-action caching capabilities.
 ### Events
 A utility module providing an event emitter.
 
+### Events for Actions
+A utility module that generates events in response to changes to `history` entries that occur outside the script's influence.
+
+Events:
+* `events-for-actions.added` - Emitted when an entry is added to the `history` array.
+  Callback arguments:
+  * `data: AIDData` - The AID-Bundler data object.
+  * `addedArgs: Object` - An object describing the event; properties are below.
+  * `addedArgs.turn: number` - The absolute turn number of the action.
+  * `addedArgs.index: number` - The index of the entry in the `history` array.
+  * `addedArgs.entry: HistoryEntry` - The entry from `history`.
+  * `addedArgs.currentHash: string` - The calculated hash for the entry's current state.
+* `events-for-actions.updated` - Emitted when an entry currently in the `history` array has changed.
+  Callback arguments:
+  * `data: AIDData` - The AID-Bundler data object.
+  * `updatedArgs: Object` - An object describing the event; properties are below.
+  * `updatedArgs.turn: number` - The absolute turn number of the action.
+  * `updatedArgs.index: number` - The index of the entry in the `history` array.
+  * `updatedArgs.entry: HistoryEntry` - The entry from `history`.
+  * `updatedArgs.currentHash: string` - The calculated hash for the entry's current state.
+  * `updatedArgs.previousHash: string` - The cached hash of the entry from a previous run.
+* `events-for-actions.removed` - Emitted when an entry previously in the `history` array was removed.
+  Callback arguments:
+  * `data: AIDData` - The AID-Bundler data object.
+  * `removedArgs: Object` - An object describing the event; properties are below.
+  * `removedArgs.turn: number` - The absolute turn number of the action.
+  * `removedArgs.previousHash: string` - The cached hash of the entry from a previous run.
+Configuration Options:
+* `events-for-actions.maximumLookBack` as `integer` default `30` - How many entries of `history` should be checked for changes.  Since hashing objects takes some serious time, the number of actions checked each turn is limited by this value.  Only these latest actions will be checked, which are generally the only entries that will be edited by a player.  Changes to entries before the look-back region can still be detected if the story is rewound far enough to bring them into the region.
+
 ### Action-Ident
 A utility module for converting entries in the `history` array to and from their absolute turn number.
 
