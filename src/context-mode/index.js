@@ -3,6 +3,8 @@
 const { Plugin } = require("aid-bundler");
 const { MatchCommand } = require("../commands");
 
+exports.PLUGIN_NAME = "Context-Mode";
+
 /** @type {Map<string, ContextModeModule>} */
 const registeredModules = new Map();
 
@@ -92,7 +94,8 @@ exports.addPlugin = (pipeline, config) => {
   for (const cmd of exports.commands)
     pipeline.commandHandler.addCommand(cmd);
 
-  pipeline.addPlugin(new Plugin("Context-Mode",
+  pipeline.addPlugin(new Plugin(
+    exports.PLUGIN_NAME,
     exports.makeModifier("input"),
     exports.makeModifier("context"),
     exports.makeModifier("output"),

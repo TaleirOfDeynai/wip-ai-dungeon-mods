@@ -1,5 +1,9 @@
 /// <reference path="./authors-manual.d.ts" />
+const { Plugin } = require("aid-bundler");
 const { SimpleCommand } = require("../commands");
+
+// This is intended to be a contraction for "Author is Manual".
+exports.PLUGIN_NAME = "Author's Manual";
 
 /**
  * Authors-Manual
@@ -36,4 +40,6 @@ exports.commands = [
 exports.addPlugin = (pipeline) => {
   for (const cmd of exports.commands)
     pipeline.commandHandler.addCommand(cmd);
+  
+  pipeline.addPlugin(new Plugin(exports.PLUGIN_NAME));
 };

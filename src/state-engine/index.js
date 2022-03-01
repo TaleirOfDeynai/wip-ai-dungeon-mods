@@ -12,6 +12,8 @@ const turnCache = require("../turn-cache");
 
 const STATE_ENGINE_VERSION = 5;
 
+exports.PLUGIN_NAME = "State-Engine";
+
 /**
  * Orders `CacheData.HistoryCacheData` by:
  * - Entries with fragments that end later.
@@ -196,5 +198,9 @@ exports.addPlugin = (pipeline, config) => {
   const historyIterator = config?.historyIterator ?? perLineIterator;
   const stateModules = config?.modules ?? [];
   const contextModifier = exports.mainModifier(historyIterator, ...stateModules);
-  pipeline.addPlugin(new Plugin("State Engine", versionCheck, contextModifier, undefined));
+  pipeline.addPlugin(new Plugin(
+    exports.PLUGIN_NAME,
+    versionCheck,
+    contextModifier
+  ));
 };

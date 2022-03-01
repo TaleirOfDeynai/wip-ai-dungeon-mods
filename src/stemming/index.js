@@ -6,6 +6,8 @@ const { FilterableCorpus } = require("./FilterableCorpus");
 const { lancasterStemmer: stemmer } = require("lancaster-stemmer");
 const { shutUpTS, chain, memoize, iterPosition, tuple, iterReverse, getEntryText } = require("../utils");
 
+exports.PLUGIN_NAME = "Stemming";
+
 const exSpecialApostrophe = /'(?:s|ll|d|ve|re)(?=\b|$)/g;
 const exRestApostrophe = /(\w)'(\w)/g;
 const exNotWord = /\W+/;
@@ -162,7 +164,8 @@ const generalModifier = (data) => {
  * @param {import("aid-bundler").Pipeline} pipeline
  */
 exports.addPlugin = (pipeline) => {
-  pipeline.addPlugin(new Plugin("Stemming",
+  pipeline.addPlugin(new Plugin(
+    exports.PLUGIN_NAME,
     generalModifier,
     generalModifier,
     generalModifier

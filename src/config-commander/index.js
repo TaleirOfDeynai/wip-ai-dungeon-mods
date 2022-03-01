@@ -7,6 +7,8 @@ const { stateModule } = require("./state-module");
 const { ConfigNamespace } = require("./ConfigNamespace");
 const extractor = require("../state-engine/parsers/extract");
 
+exports.PLUGIN_NAME = "Config-Commander";
+
 /**
  * Executes the commands specified in `$Config` world-info objects.
  * 
@@ -266,7 +268,8 @@ exports.commands = [
   for (const cmd of exports.commands)
     pipeline.commandHandler.addCommand(cmd);
 
-  pipeline.addPlugin(new Plugin("Config-Commander",
+  pipeline.addPlugin(new Plugin(
+    exports.PLUGIN_NAME,
     undefined,
     exports.contextModifier(pipeline)
   ));

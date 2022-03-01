@@ -521,8 +521,8 @@ Commands:
 * `/config reset <namespace>.<key>` - Resets a config value to defaults.
 * `/config list` - Lists all currently set configs.
 
-### Authors-Manual
-Provides a command that allows you to manipulate the programmatic Author's Note.
+### Author's Manual
+Provides a command that allows you to manipulate the programmatic Author's Note.  The name is a contraction for "Author is Manual".
 
 This exists because at some point, the field in the "Pin" menu stopped working, so I needed a workaround.  It's also useful for debugging `$Direction` entries, from time-to-time.
 

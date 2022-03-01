@@ -1,6 +1,8 @@
 /// <reference path="./action-ident.d.ts" />
 const { Plugin } = require("aid-bundler");
 
+exports.PLUGIN_NAME = "Action-Ident";
+
 /**
  * Tries to determine if the current turn had an input phase.
  * 
@@ -106,7 +108,8 @@ exports.inputModifier = ({state, info}) => {
  * @param {import("aid-bundler").Pipeline} pipeline
  */
 exports.addPlugin = (pipeline) => {
-  pipeline.addPlugin(new Plugin("Action-Ident",
+  pipeline.addPlugin(new Plugin(
+    exports.PLUGIN_NAME,
     exports.inputModifier
   ));
 };
