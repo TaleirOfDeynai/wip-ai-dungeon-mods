@@ -1,6 +1,33 @@
 /// <reference path="./utils.d.ts" />
 
 /**
+ * Validates a basic assertion.  If it fails, an error with `msg` is thrown.
+ * 
+ * @param {string} msg
+ * @param {boolean} check
+ * @returns {void}
+ */
+exports.assert = (msg, check) => {
+  if (check) return;
+  throw new Error(msg);
+};
+
+/**
+ * Validates that `value` passes the given type predicate.  If it fails, an error
+ * with `msg` is thrown.
+ * 
+ * @template TValue
+ * @param {string} msg
+ * @param {TypePredicate<TValue>} checkFn
+ * @param {any} value 
+ * @returns {TValue}
+ */
+exports.assertAs = (msg, checkFn, value) => {
+  exports.assert(msg, checkFn(value));
+  return value;
+};
+
+/**
  * IIFE helper.
  * 
  * @template T
