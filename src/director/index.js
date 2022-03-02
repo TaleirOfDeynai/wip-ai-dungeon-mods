@@ -1,7 +1,8 @@
 /// <reference path="./director.d.ts" />
 /// <reference path="../state-engine/state-engine.d.ts" />
+/// <reference path="../events-for-world-info/events-for-world-info.d.ts" />
 const { tuple, getEntryText } = require("../utils");
-const { isParamsFor, hashText } = require("../state-engine/utils");
+const { isParamsFor, dataFromCache, hashText } = require("../state-engine/utils");
 const { addStateEntry } = require("../state-engine/registry");
 const eventEmitter = require("../events");
 
@@ -122,6 +123,20 @@ const init = (data) => {
       state.$$currentDirectorSelection = this.entryId;
       return true;
     }
+
+    /**
+     * Serializes an `EngineEntryForWorldInfo` into an `EngineDataForWorldInfo` with
+     * an added `textHash` object to help detect when `authorsNote` needs to be
+     * updated in response to changes to the underlying world-info.
+     * 
+     * @returns {EngineDataForWorldInfo & { textHash: string }}
+     */
+    toJSON() {
+      return {
+        ...super.toJSON(),
+        textHash: hashText(getEntryText(this.worldInfo))
+      };
+    }
   }
 
   addStateEntry(DirectionEntry);
@@ -167,25 +182,26 @@ const restoreMissingDirection = (data) => {
 // Listens for entry changes, checking to see if this entry is the current direction
 // entry, and then updates the author's note if the entry's text changed.
 eventEmitter.on(
-  "state-engine.entryTextChanged",
+  "events-for-world-info.updated",
   /**
-   * @param {import("aid-bundler/src/aidData").AIDData} data 
-   * @param {WorldInfoEntry} wiEntry 
-   * @param {EngineDataForWorldInfo} seEntry 
+   * @param {import("aid-bundler/src/aidData").AIDData} data
+   * @param {EventsForWorldInfo.UpdatedEventArg} updatedArgs
    */
-  (data, wiEntry, seEntry) => {
+  (data, { entry }) => {
     const { state } = data;
-    if (seEntry.infoHash?.text == null) return;
-    if (state.$$currentDirectorSelection !== wiEntry.id) return;
+    const textHash = dataFromCache(data, entry.id)?.textHash;
+
+    if (textHash == null) return;
+    if (state.$$currentDirectorSelection !== entry.id) return;
 
     // Do nothing if the entry has no text or its essentially empty.
-    const newText = getEntryText(wiEntry);
+    const newText = getEntryText(entry);
     if (!newText.trim()) return;
 
     // Entry has changed.  Now, are we still using the old text for the author's note?
     // If its not currently set, we'll update for that case too.
     const { authorsNote } = state.memory;
-    if (authorsNote && hashText(authorsNote) === seEntry.infoHash.text) return;
+    if (authorsNote && hashText(authorsNote) === textHash) return;
 
     // Update to reflect the new text.
     state.memory.authorsNote = newText;
@@ -195,17 +211,29 @@ eventEmitter.on(
 // Listens for entry removals, checking to see if the entry that was the current direction
 // entry was removed and resets if so.
 eventEmitter.on(
-  "state-engine.entryRemoved",
+  "events-for-world-info.removed",
   /**
    * @param {import("aid-bundler/src/aidData").AIDData} data 
-   * @param {string} entryId
+   * @param {EventsForWorldInfo.RemovedEventArg} removedArgs
    */
-  (data, entryId) => {
+  (data, { id }) => {
     const { state } = data;
-    if (state.$$currentDirectorSelection !== entryId) return;
-    
+    if (state.$$currentDirectorSelection !== id) return;
+
     // Clear the currently selected entry; this run we should select a new entry.
     delete state.$$currentDirectorSelection;
+
+    // We also need to remove the Author's Note if it is currently set to the deleted entry.
+    // We can figure that out by checking the State-Engine cache, where we have been saving
+    // a `textHash` for direction entries.
+    const textHash = dataFromCache(data, id)?.textHash;
+    if (textHash == null) return;
+
+    const { authorsNote } = state.memory;
+    if (!authorsNote || hashText(authorsNote) !== textHash) return;
+
+    // Okay, the hashes are the same.  Unset the Author's Note.
+    delete state.memory.authorsNote;
   }
 );
 

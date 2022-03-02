@@ -2,8 +2,7 @@
 
 exports.stateModule = {
   pre: [
-    require("./init"),
-    require("./detectWorldInfoChanges")
+    require("./init")
   ],
   exec: [
     // Setting up the state entries.

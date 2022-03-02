@@ -1,5 +1,5 @@
 const { getEntryText, shutUpTS } = require("../utils");
-const { worldInfoString, hashWorldInfo } = require("./utils");
+const { worldInfoString } = require("./utils");
 const { StateEngineEntry, BadStateEntryError, InvalidTypeError } = require("./StateEngineEntry");
 const extractor = require("./parsers/extract");
 const { ParsingError } = require("./parsers/errors");
@@ -163,12 +163,11 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    */
   toJSON() {
     const { infoType, infoKey, infoName } = this;
-    const infoHash = hashWorldInfo(this.worldInfo);
 
     return {
       ...super.toJSON(),
       forWorldInfo: true,
-      infoType, infoKey, infoName, infoHash
+      infoType, infoKey, infoName
     };
   }
 }

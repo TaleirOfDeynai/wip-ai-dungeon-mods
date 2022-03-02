@@ -28,6 +28,22 @@ exports.isParamsTextable = (params) =>
   "entry" in params;
 
 /**
+ * Fetches the cached State-Engine data for some entry.  May return `undefined` if no
+ * cached data could be found.
+ * 
+ * @param {AIDData} data
+ * The AID-Bundler data object.
+ * @param {string} entryId
+ * The ID of the world-info entry.
+ * @returns {(StateEngineData & Record<string, unknown>) | undefined}
+ */
+exports.dataFromCache = (data, entryId) => {
+  const theCache = data.state.$$stateDataCache;
+  if (!theCache) return undefined;
+  return theCache[entryId];
+};
+
+/**
  * Creates a ten word excerpt from a string.
  * 
  * @param {string} str
@@ -90,6 +106,9 @@ exports.stateDataString = (parts) => {
   return `${result}\n\t${exports.makeExcerpt(entryText)}`;
 };
 
+/**
+ * A helper function to hash some text in an optimal way.
+ */
 exports.hashText = memoize(
   /**
    * @param {Maybe<string>} text
@@ -103,30 +122,5 @@ exports.hashText = memoize(
     if (text.length <= 40) return text;
     // Generate a hash for the text.
     return objectHash.sha1({ text });
-  }
-);
-
-/**
- * Creates a hash of a `WorldInfoEntry` object using only the properties important
- * to State-Engine.
- * 
- * This can be used to determine if an entry has changed in a meaningful way
- * between executions of the script.
- * 
- * This function uses memoization, which lasts for the life-time of this module,
- * which is a single `input`, `context`, or `output` phase.
- */
-exports.hashWorldInfo = memoize(
-  /**
-   * @param {WorldInfoEntry} wiEntry
-   * @returns {WorldInfoHash | undefined}
-   */
-  (wiEntry) => {
-    if (!wiEntry) return undefined;
-    const { id, name, type, keys, attributes, entry } = wiEntry;
-    return {
-      full: objectHash.sha1({ id, name, type, keys, attributes, entry }),
-      text: exports.hashText(entry)
-    }
   }
 );

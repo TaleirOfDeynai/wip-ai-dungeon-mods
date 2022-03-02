@@ -81,6 +81,11 @@ interface StateEngineData {
    */
   text?: string;
   /**
+   * Optional; when `text` is provided, you may also store a hash of the string.
+   * The utility function {@link import("./utils").hashText} is provided to help.
+   */
+  textHash?: string;
+  /**
    * A list of user-given identifiers.  Will be empty if it was not given one or is
    * otherwise not applicable to the `type`.  The first element is typically treated
    * like a name for the instance.
@@ -94,13 +99,6 @@ interface StateEngineData {
    * An array of keyword configuration objects.
    */
   keywords: AnyKeywordDef[];
-}
-
-interface WorldInfoHash {
-  /** The hash for the full entry, to detect any changes. */
-  full: string;
-  /** The hash for only the entry's text.  Will be `""` if it had no text. */
-  text: string;
 }
 
 interface EngineDataForWorldInfo extends StateEngineData {
@@ -121,11 +119,6 @@ interface EngineDataForWorldInfo extends StateEngineData {
    * Can be used to check to see if it requires recalculation.
    */
   infoKey: WorldInfoEntry["keys"];
-  /**
-   * The hash of the `WorldInfoEntry` used to generate this data.  This allows
-   * us to discover changes to entries.
-   */
-  infoHash?: WorldInfoHash;
 }
 
 interface StateDataForModifier extends StateEngineData {
