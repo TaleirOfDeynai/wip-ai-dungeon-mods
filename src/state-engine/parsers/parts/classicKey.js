@@ -2,6 +2,7 @@ const p = require("parsimmon");
 const { chain, partition, fromPairs, tuple } = require("../../../utils");
 const { isRelation } = require("../checks");
 const isolatedBetween = require("../combinators/isolatedBetween");
+const restFragment = require("./restFragment");
 const sep = require("./separators");
 const { semi: { keyword } } = require("./keywords");
 const { topic, relation } = require("./topics");
@@ -27,6 +28,12 @@ exports.infoContext = p.alt(
 );
 
 exports.markedType = p.regexp(/\$(\w+)/, 1).desc("an entry type, prefixed with the dollar-sign ($)");
+
+exports.patterns = {
+  type: p.seqMap(exports.markedType, restFragment, tuple).trim(sep.ws).lookahead(p.eof),
+  context: p.seqMap(exports.infoContext, restFragment, tuple),
+  matchers: exports.infoMatchers
+};
 
 /** @type {p.Parser<Omit<StateEngineData, "entryId" | "text">>} */
 exports.infoEntry = p

@@ -1,4 +1,7 @@
+const Deferred = require("../../utils/Deferred");
 const { asConstant } = require("../../utils");
+
+exports.UNDEF_DEFERRED = Deferred.wrap(undefined);
 
 exports.ATTRS = Object.freeze({
   TYPE: asConstant("@type"),

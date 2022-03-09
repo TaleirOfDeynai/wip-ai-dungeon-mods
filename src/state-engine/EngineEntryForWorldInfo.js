@@ -35,7 +35,7 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
   static *produceEntries(data, { config, validationIssues }) {
     for (const info of data.worldEntries) {
       try {
-        const theType = extractor.type(info);
+        const theType = extractor.type(info).result;
         if (!this.checkType(theType)) continue;
         yield new this(info, config);
       }
@@ -130,10 +130,10 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
   parse(worldInfo) {
     /** @type {typeof EngineEntryForWorldInfo} */
     const ctor = shutUpTS(this.constructor);
-    const parsedType = extractor.type(worldInfo);
-    const topics = extractor.topics(worldInfo) ?? [];
-    const keywords = extractor.keywords(worldInfo) ?? [];
-    const relations = extractor.relations(worldInfo) ?? [];
+    const parsedType = extractor.type(worldInfo).result;
+    const topics = extractor.topics(worldInfo).result ?? [];
+    const keywords = extractor.keywords(worldInfo).result ?? [];
+    const relations = extractor.relations(worldInfo).result ?? [];
 
     if (!parsedType)
       throw new BadStateEntryError(

@@ -30,7 +30,7 @@ exports.contextModifier = (pipeline) => (aidData) => {
     .filter((wi) => {
       try {
         // We only want State-Engine `Config` entries.
-        const theType = extractor.type(wi);
+        const theType = extractor.type(wi).result;
         if (!theType) return false;
         if (theType.type !== "state-engine") return false;
         return theType.value === "Config";

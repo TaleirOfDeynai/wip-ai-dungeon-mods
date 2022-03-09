@@ -1,3 +1,4 @@
+type Deferred<T> = import("../utils/Deferred")<T>;
 type MatchableEntry = import("./MatchableEntry").MatchableEntry;
 type StateEngineEntry = import("./StateEngineEntry").StateEngineEntry;
 
@@ -15,6 +16,10 @@ interface StateEngineEntryClass {
 
 interface PatternExtractor<T> {
   (entry: Maybe<WorldInfoEntry>): T | undefined;
+}
+
+interface DeferredExtractor<T> {
+  (entry: Maybe<WorldInfoEntry>): Deferred<T | undefined>;
 }
 
 interface PatternMatcher<T> {

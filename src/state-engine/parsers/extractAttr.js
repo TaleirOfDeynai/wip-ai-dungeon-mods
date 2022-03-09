@@ -1,5 +1,5 @@
-const p = require("parsimmon");
-const { is } = require("../../utils");
+const Deferred = require("../../utils/Deferred");
+const { dew, is } = require("../../utils");
 const pSeparators = require("./parts/separators");
 const pEntryTypes = require("./parts/entryTypes");
 const pKeywords = require("./parts/keywords");
@@ -11,46 +11,62 @@ const { ParsingError } = require("./errors");
 
 const topicList = pTopic.topic.sepBy(pSeparators.comma);
 
-/** @type {PatternExtractor<AnyEntryTypeDef>} */
-exports.type = (entry) => {
-  const seType = entry?.attributes?.[ATTRS.TYPE];
-  if (!is.string(seType) || !seType) return undefined;
-  if (!seType.trim()) return undefined;
+exports.type = dew(() => {
+  /** @type {PatternExtractor<AnyEntryTypeDef>} */
+  const impl = (entry) => {
+    const seType = entry?.attributes?.[ATTRS.TYPE];
+    if (!is.string(seType) || !seType) return undefined;
+    if (!seType.trim()) return undefined;
+  
+    const result = pEntryTypes.typeAttr.parse(seType);
+    if (result.status) return result.value;
+    throw new ParsingError(entry, "Entry Type", ["attributes", ATTRS.TYPE], seType, result);
+  };
 
-  const result = pEntryTypes.typeAttr.parse(seType);
-  if (result.status) return result.value;
-  throw new ParsingError(entry, "Entry Type", ["attributes", ATTRS.TYPE], seType, result);
-};
+  return Deferred.memoizeLazily(impl);
+});
 
-/** @type {PatternExtractor<string[]>} */
-exports.topics = (entry) => {
-  const seTopics = entry?.attributes?.[ATTRS.TOPICS];
-  if (!is.string(seTopics) || !seTopics) return undefined;
-  if (!seTopics.trim()) return [];
+exports.topics = dew(() => {
+  /** @type {PatternExtractor<string[]>} */
+  const impl = (entry) => {
+    const seTopics = entry?.attributes?.[ATTRS.TOPICS];
+    if (!is.string(seTopics) || !seTopics) return undefined;
+    if (!seTopics.trim()) return [];
 
-  const result = topicList.parse(seTopics);
-  if (result.status) return result.value;
-  throw new ParsingError(entry, "List of Topics", ["attributes", ATTRS.TOPICS], seTopics, result);
-};
+    const result = topicList.parse(seTopics);
+    if (result.status) return result.value;
+    throw new ParsingError(entry, "List of Topics", ["attributes", ATTRS.TOPICS], seTopics, result);
+  };
 
-/** @type {PatternExtractor<AnyKeywordDef[]>} */
-exports.keywords = (entry) => {
-  const seKeywords = entry?.attributes?.[ATTRS.KEYWORDS];
-  if (!is.string(seKeywords) || !seKeywords) return undefined;
-  if (!seKeywords.trim()) return [];
+  return Deferred.memoizeLazily(impl);
+});
 
-  const result = pKeywords.comma.sequence.parse(seKeywords);
-  if (result.status) return result.value;
-  throw new ParsingError(entry, "List of Keywords", ["attributes", ATTRS.KEYWORDS], seKeywords, result);
-};
+exports.keywords = dew(() => {
+  /** @type {PatternExtractor<AnyKeywordDef[]>} */
+  const impl = (entry) => {
+    const seKeywords = entry?.attributes?.[ATTRS.KEYWORDS];
+    if (!is.string(seKeywords) || !seKeywords) return undefined;
+    if (!seKeywords.trim()) return [];
+  
+    const result = pKeywords.comma.sequence.parse(seKeywords);
+    if (result.status) return result.value;
+    throw new ParsingError(entry, "List of Keywords", ["attributes", ATTRS.KEYWORDS], seKeywords, result);
+  };
 
-/** @type {PatternExtractor<AnyRelationDef[]>} */
-exports.relations = (entry) => {
-  const seRelations = entry?.attributes?.[ATTRS.RELATIONS];
-  if (!is.string(seRelations) || !seRelations) return undefined;
-  if (!seRelations.trim()) return [];
+  return Deferred.memoizeLazily(impl);
+})
 
-  const result = pTopic.commaRelations.parse(seRelations);
-  if (result.status) return result.value;
-  throw new ParsingError(entry, "List of Relations", ["attributes", ATTRS.RELATIONS], seRelations, result);
-};
+exports.relations = dew(() => {
+  /** @type {PatternExtractor<AnyRelationDef[]>} */
+  const impl = (entry) => {
+    const seRelations = entry?.attributes?.[ATTRS.RELATIONS];
+    if (!is.string(seRelations) || !seRelations) return undefined;
+    if (!seRelations.trim()) return [];
+
+    const result = pTopic.commaRelations.parse(seRelations);
+    if (result.status) return result.value;
+    throw new ParsingError(entry, "List of Relations", ["attributes", ATTRS.RELATIONS], seRelations, result);
+  };
+
+  return Deferred.memoizeLazily(impl);
+});
