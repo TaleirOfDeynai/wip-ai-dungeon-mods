@@ -1,5 +1,5 @@
 /** The primative data-types. */
-type Primitives = number | string | boolean | Function | {};
+type Primitives = number | string | boolean | Function | {} | null | undefined;
 
 type UnionToIntersection<T>
   = (T extends any ? (x: T) => any : never) extends
