@@ -1,4 +1,6 @@
-const { shutUpTS, tuple, memoize } = require(".");
+/// <reference path="./utils.d.ts" />
+const { AggregateError, wrapAsError } = require("./errors");
+const { shutUpTS, is, tuple, memoize } = require(".");
 
 const $$executor = Symbol("Deferred.executor");
 const $$result = Symbol("Deferred.result");
@@ -38,7 +40,7 @@ class Deferred {
     /** @type {typeof WAITING | T} */
     this[$$result] = shutUpTS(arguments.length === 1 ? WAITING : resolvedValue);
 
-    /** @type {unknown} If `executorFn` throws an error, this is the error. */
+    /** @type {Error | undefined} If `executorFn` throws an error, this is the error. */
     this[$$error] = undefined;
   }
 
@@ -82,11 +84,32 @@ class Deferred {
    * If you have a value that may or may not be deferred, this function will sort it out
    * and return a concrete value.
    * 
+   * If it was deferred and an error occurred while executing, that error will be thrown.
+   * 
    * @template {MaybeDeferred<any>} T
    * @param {T} maybeDeferred 
    * @returns {Executed<T>}
    */
   static resolve(maybeDeferred) {
+    if (maybeDeferred instanceof Deferred) {
+      const result = maybeDeferred.result;
+      if (is.error(result)) throw result;
+      return result;
+    }
+    // @ts-ignore - Stupid TS.
+    return maybeDeferred;
+  }
+
+  /**
+   * If you have a value that may or may not be deferred, this function will sort it out
+   * and return a concrete value or an error, if the value was deferred and execution
+   * resulted in an error. 
+   * 
+   * @template {MaybeDeferred<any>} T
+   * @param {T} maybeDeferred 
+   * @returns {Trial<Executed<T>>}
+   */
+  static tryResolve(maybeDeferred) {
     if (maybeDeferred instanceof Deferred) return maybeDeferred.result;
     // @ts-ignore - Stupid TS.
     return maybeDeferred;
@@ -107,7 +130,16 @@ class Deferred {
     const deferredInputs = shutUpTS(args.slice(0, -1));
     /** @type {(...args: any) => any} */
     const xformFn = shutUpTS(args[args.length - 1]);
-    return new Deferred(() => xformFn(...deferredInputs.map(Deferred.resolve)));
+    return new Deferred(() => {
+      const results = deferredInputs.map(Deferred.tryResolve);
+      if (!results.some(is.error)) return xformFn(results);
+
+      // Report the errors in aggregate.
+      throw new AggregateError(
+        "One or more deferred values in a joined transformation threw an error.",
+        results.filter(is.error)
+      );
+    });
   }
 
   /**
@@ -125,29 +157,36 @@ class Deferred {
   }
 
   /**
-   * Gets the result, executing the deferred work if needed.
+   * Gets the result, executing the deferred work if needed.  If an error occurs, it
+   * will be returned directly as the result.
    * 
-   * @type {T}
+   * @type {Trial<T>}
    */
   get result() {
     return this.exec();
   }
 
   /**
-   * Executes the deferred executor, if needed, and returns the result.
+   * Executes the deferred executor, if needed, and returns the result.  If an error
+   * occurs during execution, it will be provided as the result.
    * 
    * The executor is only invoked once and multiple calls to this method will return
    * the same value/reference.
    * 
-   * @returns {T}
+   * An error is thrown if the execution becomes circular; that is if the value is
+   * currently executing and has not yet been resolved and a request is made to get
+   * the value again, then calculating the value requires calculating the value, and
+   * that is not resolvable.
+   * 
+   * @returns {Trial<T>}
    */
   exec() {
     const result = this[$$result];
     if (result !== WAITING) return result;
 
-    // If an earlier `exec` threw, let's rethrow it.
+    // If an earlier `exec` threw, let's return it.
     const error = this[$$error];
-    if (error) throw error;
+    if (error) return error;
 
     const executorFn = this[$$executor];
     if (executorFn) {
@@ -157,13 +196,14 @@ class Deferred {
         return this[$$result] = executorFn();
       }
       catch (error) {
+        const safeError = wrapAsError(error);
         // In case `exec` is called a second time, store the error so we can rethrow it.
         // The only down-side is the stack might be a bit ...odd.
-        this[$$error] = error;
-        throw error;
+        return this[$$error] = safeError;
       }
     }
 
+    // This is essentially fatal, and so needs to be thrown.
     throw new Error([
       "Circular deferred execution detected",
       "this instance is already executing but has not yet produced a value."
@@ -175,13 +215,43 @@ class Deferred {
    * that will defer the work until its {@link Deferred.result result} is called upon.
    * This instance will not be resolved until then.
    * 
+   * Unlike {@link Deferred.tryMap tryMap}, this will unpack the {@link Trial} for `xformFn`.
+   * 
    * @template U
    * @param {(value: T) => U} xformFn
    * The transformation function to eventually apply to the resolved value.
    * @returns {Deferred<U>}
    */
   map(xformFn) {
-    return new Deferred(() => xformFn(this.exec()));
+    return new Deferred(() => {
+      const result = this.exec();
+      if (is.error(result)) throw result;
+      return xformFn(result);
+    });
+  }
+
+  /**
+   * Applies a transformation on this deferred value, returning a new {@link Deferred} instance
+   * that will defer the work until its {@link Deferred.result result} is called upon.
+   * This instance will not be resolved until then.
+   * 
+   * Unlike {@link Deferred.map map}, this will not unpack the {@link Trial} for `xformFn`.
+   * 
+   * @template U
+   * @param {(result: Trial<T>) => Trial<U>} xformFn
+   * @returns {Deferred<U>}
+   */
+  tryMap(xformFn) {
+    return new Deferred(() => {
+      // Execute the previous value.
+      const result = this.exec();
+      if (is.error(result)) throw result;
+      // Execute the current value.
+      const next = xformFn(result);
+      if (is.error(next)) throw next;
+      // Successfully executed.
+      return next;
+    });
   }
 }
 

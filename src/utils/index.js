@@ -102,6 +102,8 @@ exports.tuple3 = (a, b, c) => [a, b, c];
 
 /** Helpers for type-guards. */
 exports.is = {
+  /** @type {TypePredicate<Error>} */
+  error: (value) => value instanceof Error,
   /** @type {TypePredicate<Function>} */
   function: (value) => typeof value === "function",
   /** @type {TypePredicate<Object>} */

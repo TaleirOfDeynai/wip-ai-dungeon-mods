@@ -1,6 +1,9 @@
 /** The primative data-types. */
 type Primitives = number | string | boolean | Function | {} | null | undefined;
 
+/** Represents a result or an error. */
+type Trial<T> = T | Error;
+
 type UnionToIntersection<T>
   = (T extends any ? (x: T) => any : never) extends
     (x: infer R) => any ? R : never;
