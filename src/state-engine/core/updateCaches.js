@@ -1,4 +1,4 @@
-const { toPairs, fromPairs, chain } = require("../../utils");
+const { fromPairs, chain } = require("../../utils");
 const { entrySorter } = require("../entrySorting");
 
 /**

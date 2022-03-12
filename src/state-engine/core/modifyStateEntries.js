@@ -1,4 +1,4 @@
-const { tuple2, chain, toPairs } = require("../../utils");
+const { tuple2, chain } = require("../../utils");
 
 /**
  * @param {StateEngineEntry} entry
