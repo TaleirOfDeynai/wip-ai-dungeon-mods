@@ -102,6 +102,8 @@ exports.tuple3 = (a, b, c) => [a, b, c];
 
 /** Helpers for type-guards. */
 exports.is = {
+  /** @type {TypePredicate<undefined>} */
+  undefined: (value) => typeof value === "undefined",
   /** @type {TypePredicate<Error>} */
   error: (value) => value instanceof Error,
   /** @type {TypePredicate<Function>} */
@@ -208,10 +210,9 @@ exports.fromPairs = (kvps) => {
 /**
  * Creates an iterable that yields the key-value pairs of an object.
  * 
- * @template {string | number} TKey
- * @template TValue
- * @param {Maybe<Record<TKey, TValue>>} obj
- * @returns {Iterable<[TKey, TValue]>} 
+ * @template {Record<string, any>} TObj
+ * @param {Maybe<TObj>} obj
+ * @returns {Iterable<[keyof TObj, TObj[keyof TObj]]>} 
  */
 exports.toPairs = function*(obj) {
   if (obj == null) return;
@@ -224,12 +225,11 @@ exports.toPairs = function*(obj) {
 /**
  * Applies a transformation function to the values of an object.
  * 
- * @template {string | number} TKey
- * @template TIn
+ * @template {Record<string, any>} TObj
  * @template TOut
- * @param {Maybe<Record<TKey, TIn>>} obj
- * @param {(value: TIn, key: TKey) => TOut} xformFn
- * @returns {Record<TKey, TOut>} 
+ * @param {Maybe<TObj>} obj
+ * @param {(value: TObj[keyof TObj], key: keyof TObj) => TOut} xformFn
+ * @returns {{ [K in keyof TObj]: TOut }} 
  */
 exports.mapValues = function(obj, xformFn) {
   /** @type {any} */
