@@ -28,6 +28,14 @@ exports.isParamsTextable = (params) =>
   "entry" in params;
 
 /**
+ * Tries to obtain the loaded and parsed map of {@link StateEngineEntry}.
+ * 
+ * @param {AIDData} data
+ * @returns {Map<string, StateEngineEntry> | undefined}
+ */
+exports.getStateEntries = (data) => data.stateEngineContext?.entriesMap;
+
+/**
  * Fetches the cached State-Engine data for some entry.  May return `undefined` if no
  * cached data could be found.
  * 

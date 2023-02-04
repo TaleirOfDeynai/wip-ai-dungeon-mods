@@ -1,18 +1,29 @@
-const { getEntryText, shutUpTS } = require("../utils");
+const Deferred = require("../utils/Deferred");
+const { shutUpTS, is, getEntryText, chain, toPairs } = require("../utils");
 const { worldInfoString } = require("./utils");
 const { StateEngineEntry, BadStateEntryError, InvalidTypeError } = require("./StateEngineEntry");
 const extractor = require("./parsers/extract");
 const { ParsingError } = require("./parsers/errors");
 
+/**
+ * @typedef ParsedResult
+ * @prop {string} type
+ * @prop {string[]} topics
+ * @prop {AnyRelationDef[]} relations
+ * @prop {AnyKeywordDef[]} keywords
+ * @prop {Record<string, any>} [state]
+ */
+
 class EngineEntryForWorldInfo extends StateEngineEntry {
   /**
-   * @param {WorldInfoEntry} worldInfo
    * @param {Context["config"]} config
+   * @param {string} entryId
+   * @param {WorldInfoEntry} worldInfo
+   * @param {ParsedResult} parsedResult
    */
-  constructor(worldInfo, config) {
+  constructor(config, entryId, worldInfo, parsedResult) {
     super(config);
-    const parsedResult = this.parse(worldInfo);
-    this.init(worldInfo.id, parsedResult.topics, parsedResult);
+    this.init(entryId, parsedResult.state, parsedResult.topics, parsedResult);
     this.worldInfo = worldInfo;
   }
 
@@ -25,6 +36,48 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    */
   static checkType(typeDef) {
     return typeDef?.type === "state-engine" && typeDef.value === this.forType;
+  }
+
+  /**
+   * @param {import("./api")} api
+   * @param {AIDData} data
+   * @returns {Iterable<[string, StateEnginePotential]>}
+   */
+  static *discoverEntries(api, data) {
+    const config = data.stateEngineContext.config;
+
+    for (const info of data.worldEntries) {
+      // We're going to try and only parse the type to begin with.
+      // That's the minimum information needed to determine if this world-info
+      // should be a member of this type.
+      const theType = extractor.type(info).result;
+      // Do our basic guards.
+      if (is.undefined(theType)) continue;
+      if (is.error(theType)) continue;
+      if (!this.checkType(theType)) continue;
+
+      const entryId = `${theType}:${info.id}`;
+
+      const text = Deferred.wrap(info.entry || undefined);
+      
+      // All these are guarded so they cannot be `undefined`.
+      // They may still resolve into an error, though.
+      const topics = extractor.topics(info).map((v = []) => v);
+      const relations = extractor.relations(info).map((v = []) => v);
+      const keywords = extractor.keywords(info).map((v = []) => v);
+
+      const entry = Deferred.joinMap(
+        theType.value, topics, relations, keywords,
+        (type, topics, relations, keywords) => new this(
+          config, entryId, info, { type, topics, relations, keywords }
+        )
+      );
+
+      yield [entryId, {
+        entryId, text, topics, relations, keywords, entry,
+        type: Deferred.wrap(theType)
+      }];
+    }
   }
 
   /**
@@ -116,44 +169,6 @@ class EngineEntryForWorldInfo extends StateEngineEntry {
    */
    get text() {
     return getEntryText(this.worldInfo);
-  }
-
-  /**
-   * Transforms a `WorldInfoEntry` into a `WorldStateData` object by parsing its
-   * `keys` property.  If it fails, it will return `null`.
-   * 
-   * @param {WorldInfoEntry} worldInfo 
-   * @throws If parsing failed.
-   * @throws If parsing succeeded, but the extracted type did not match.
-   * @returns {Omit<StateEngineData, "entryId">}
-   */
-  parse(worldInfo) {
-    /** @type {typeof EngineEntryForWorldInfo} */
-    const ctor = shutUpTS(this.constructor);
-    const parsedType = extractor.type(worldInfo).result;
-    const topics = extractor.topics(worldInfo).result ?? [];
-    const keywords = extractor.keywords(worldInfo).result ?? [];
-    const relations = extractor.relations(worldInfo).result ?? [];
-
-    if (!parsedType)
-      throw new BadStateEntryError(
-        `Failed to parse World Info entry as a \`${this.type}\`.`
-      );
-
-    // It is possible that some entries may wish to map vanilla entry types
-    // to State-Engine types, like AID's "character" to Deep-State's "NPC",
-    // for instance.  If `checkType` says it's the right type, we'll assume
-    // it knows what it is doing.
-    if (!ctor.checkType(parsedType))
-      throw new InvalidTypeError([
-        `Expected World Info entry to parse as a \`${this.type}\``,
-        `but it parsed as a \`${parsedType.value}\` instead.`
-      ].join(", "));
-
-    return {
-      type: ctor.forType,
-      topics, keywords, relations
-    };
   }
 
   /**

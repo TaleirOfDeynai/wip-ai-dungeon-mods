@@ -11,6 +11,7 @@ interface StateModule {
 interface StateEngineEntryClass {
   new (...args: any[]): StateEngineEntry;
   forType: (typeof import("./StateEngineEntry").StateEngineEntry)["forType"];
+  discoverEntries: (typeof import("./StateEngineEntry").StateEngineEntry)["discoverEntries"];
   produceEntries: (typeof import("./StateEngineEntry").StateEngineEntry)["produceEntries"];
 }
 
@@ -57,13 +58,53 @@ type AnyRelationDef = RelationDef<RelationTypes>;
 type AnyMatcherDef = AnyKeywordDef | AnyRelationDef;
 
 /**
- * An object that provides `WorldInfoEntry` extraction services.
+ * Represents the potential data for a State-Engine entry.  This is all tentative
+ * and deferred; the entry may not actually materialize, as parsing the entry only
+ * occurs when demanded.
  */
-interface EntryExtractor {
-  type: PatternExtractor<AnyEntryTypeDef>;
-  topics: PatternExtractor<string[]>;
-  keywords: PatternExtractor<AnyKeywordDef[]>;
-  relations: PatternExtractor<AnyRelationDef[]>;
+interface StateEnginePotential {
+  /**
+   * The ID that will be given to this entry.
+   */
+  entryId: string;
+
+  /**
+   * A reference to the {@link StateEngineEntry} constructor that emitted this object.
+   * Untyped as a matter of convenience for the type-system.
+   */
+  entryClass: unknown;
+
+  /**
+   * The deferred type of this entry.
+   */
+  type: Deferred<AnyEntryTypeDef>;
+
+  /**
+   * A deferred list of user-given identifiers.  Will be empty if it was not given one
+   * or is otherwise not applicable to the `type`.  The first element is typically
+   * treated like a name for the instance.
+   */
+  topics: Deferred<string[]>;
+
+  /**
+   * A deferred array of relation configuration objects.
+   */
+  relations: Deferred<AnyRelationDef[]>;
+
+  /**
+   * A deferred array of keyword configuration objects.
+   */
+  keywords: Deferred<AnyKeywordDef[]>;
+
+  /**
+   * If it's possible to predict the text of the entry, this will be that.
+   */
+  text: Deferred<string | undefined>;
+
+  /**
+   * The deferred {@link StateEngineEntry} instance.
+   */
+  entry: Deferred<StateEngineEntry>;
 }
 
 interface StateEngineData {
@@ -81,15 +122,9 @@ interface StateEngineData {
    */
   entryId: string;
   /**
-   * Optional; provide to store the entry's text.  Especially useful if the entry is
-   * dynamic and needs to be recalled across multiple executions or phases.
+   * The per-entry state object, only persisted if it was not empty.
    */
-  text?: string;
-  /**
-   * Optional; when `text` is provided, you may also store a hash of the string.
-   * The utility function {@link import("./utils").hashText} is provided to help.
-   */
-  textHash?: string;
+  state?: Record<string, string | number | boolean>;
   /**
    * A list of user-given identifiers.  Will be empty if it was not given one or is
    * otherwise not applicable to the `type`.  The first element is typically treated
@@ -390,6 +425,7 @@ declare interface GameState {
 
 declare module "aid-bundler/src/aidData" {
   interface AIDData {
+    stateEngineApi: import("./api");
     stateEngineContext: Context;
     historyIterator: HistoryIteratorFn;
   }

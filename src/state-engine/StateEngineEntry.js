@@ -1,4 +1,4 @@
-const { getText } = require("../utils");
+const { getText, fromPairs } = require("../utils");
 const { isParamsFor, isParamsTextable, stateDataString } = require("./utils");
 const { isInclusiveKeyword, isInclusiveRelation } = require("./parsers/checks");
 
@@ -47,6 +47,9 @@ class StateEngineEntry {
     /** @type {import("./config").StateEngineConfig} The State-Engine configuration instance. */
     this.config = config;
 
+    /** @type {Map<string, string | number | boolean>} A per-entry state object, persisted at the end. */
+    this.state = new Map();
+
     /** @type {ReadonlyArray<AnyRelationDef>} Private backing field for `relations`. */
     this[$$relations] = [];
   }
@@ -63,6 +66,17 @@ class StateEngineEntry {
       "Override me with a type string.",
       "IE: if I'm for `$Lore`, make me return `\"Lore\"`."
     ].join("  "));
+  }
+
+  /**
+   * Provided the 
+   * 
+   * @param {AIDData} data
+   * @param {import("./api")} api
+   * @returns {Iterable<[string, StateEnginePotential]>}
+   */
+  static *discoverEntries(data, api) {
+    throw new TypeError("Override me so I yield potential entries of this type.");
   }
 
   /**
@@ -177,17 +191,20 @@ class StateEngineEntry {
    * Handles deferred initialization of the class.
    * 
    * @param {string} entryId
+   * @param {Record<string, any>} [state]
    * @param {string[]} [topics]
    * @param {Object} [matchingOpts]
    * @param {AnyRelationDef[]} [matchingOpts.relations]
    * @param {AnyKeywordDef[]} [matchingOpts.keywords]
    * @returns {this}
    */
-  init(entryId, topics, matchingOpts) {
+  init(entryId, state, topics, matchingOpts) {
     this.entryId = entryId;
+    this.state = new Map(state ? Object.entries(state) : []);
     this.topics = new Set(topics ?? []);
     this.relations = matchingOpts?.relations ?? [];
     this.keywords = matchingOpts?.keywords ?? [];
+
     return this;
   }
 
@@ -535,10 +552,11 @@ class StateEngineEntry {
    */
   toJSON() {
     const { type, entryId } = this;
+    const state = this.state.size > 0 ? fromPairs(this.state) : undefined;
     const topics = [...this.topics];
     const relations = [...this.relations];
     const keywords = [...this.keywords];
-    return { type, entryId, topics, relations, keywords };
+    return { type, entryId, state, topics, relations, keywords };
   }
 }
 

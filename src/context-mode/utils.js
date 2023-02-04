@@ -1,5 +1,5 @@
 /// <reference path="../state-engine/state-engine.d.ts" />
-const { dew, getEntryText } = require("../utils");
+const { dew, is, getEntryText } = require("../utils");
 const turnCache = require("../turn-cache");
 const { dataFromCache } = require("../state-engine/utils");
 const perLineIterator = require("../state-engine/iterators/perLine");
@@ -59,7 +59,7 @@ exports.getStateEngineData = (aidData, assocData) => {
 
   // And locate some text for the entry?
   const text = dew(() => {
-    if (stateData.text) return stateData.text;
+    if (is.string(stateData.text)) return stateData.text;
 
     // Try and pull up a world-info from the ID.
     if (stateData.forWorldInfo !== true) return undefined;
